@@ -1,0 +1,29 @@
+# === PC Monitor - file rahasia & artefak, jangan di-commit ===
+.env
+*.env
+!.env.example
+agent/.env
+instance/
+*.db
+*.sqlite
+*.log
+weekly_check.log
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Build artefak agen
+agent/dist/
+agent/build/
+agent/*.spec
+pcmonitor-agent.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp

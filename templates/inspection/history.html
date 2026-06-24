@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Riwayat Pemeriksaan{% endblock %}
+{% block content %}
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Waktu</th><th>PC</th><th>Status</th><th>Catatan</th><th>Sumber</th><th>Aksi</th></tr></thead>
+  <tbody>
+  {% for inp in items %}
+    <tr>
+      <td>{{ inp.inspected_at|fmtdt }}</td>
+      <td><a href="{{ url_for('pc.detail', pc_id=inp.pc_id) }}">{{ inp.pc.name }}</a></td>
+      <td><span class="badge badge-{{ inp.status }}">{{ inp.status }}</span></td>
+      <td class="wrap">{{ inp.note or '-' }}</td>
+      <td>{{ inp.source }}</td>
+      <td>
+        <form method="post" action="{{ url_for('insp.delete', insp_id=inp.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">Hapus</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted" style="text-align:center;padding:14px">Belum ada riwayat.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

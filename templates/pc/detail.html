@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ pc.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>{{ pc.name }} <span class="muted" style="font-size:13px">{{ pc.location }}</span></h2>
+  <div class="form-grid">
+    <div><label>RAM</label><div class="spec">{{ pc.ram_sticks }} x {{ pc.ram_capacity_gb }} GB</div></div>
+    <div><label>SSD</label><div class="spec">{{ pc.ssd_count }} x {{ pc.ssd_capacity_gb }} GB</div></div>
+    <div><label>GPU</label><div>{{ pc.gpu_name or '-' }}</div></div>
+    <div><label>Monitor</label><div class="spec">{{ pc.monitor_count }} x {{ pc.monitor_size_inch }}"{% if pc.monitor_brand %} {{ pc.monitor_brand }}{% endif %}</div></div>
+    <div><label>Catatan</label><div>{{ pc.notes or '-' }}</div></div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="{{ url_for('insp.add', pc_id=pc.id) }}">+ Pemeriksaan</a>
+    <a class="btn" href="{{ url_for('pc.edit', pc_id=pc.id) }}">Edit Spek</a>
+    <a class="btn" href="{{ url_for('insp.history', pc_id=pc.id) }}">Riwayat</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="font-size:15px">Spek Aktual (dari Agen)
+    {% if live and live.online %}
+      <span class="badge badge-OK">● ONLINE</span>
+    {% else %}
+      <span class="badge badge-BELUM">○ OFFLINE</span>
+    {% endif %}
+  </h2>
+  {% if live %}
+  <div class="form-grid">
+    <div><label>IP</label><div class="spec">{{ live.ip or '-' }}</div></div>
+    <div><label>Hostname</label><div>{{ live.hostname or '-' }}</div></div>
+    <div><label>Last Seen</label><div>{{ live.last_seen|fmtdt if live.last_seen else '-' }}</div></div>
+    <div><label>Versi Agen</label><div>{{ live.agent_version or '-' }}</div></div>
+    <div><label>RAM Aktual</label><div class="spec">
+      {% if live.ram and live.ram.sticks %}{{ live.ram.sticks|length }} keping = {{ live.ram.total_gb }} GB{% else %}-{% endif %}
+    </div></div>
+    <div><label>GPU Aktual</label><div>
+      {% if live.gpus %}{% for g in live.gpus %}{{ g.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}-{% endif %}
+    </div></div>
+    <div class="full"><label>Penyimpanan Aktual</label><div class="spec">
+      {% if live.disks %}{% for d in live.disks %}{{ d.media }} {{ d.size_gb }}GB ({{ d.model }}){% if not loop.last %} · {% endif %}{% endfor %}{% else %}-{% endif %}
+    </div></div>
+  </div>
+  {% else %}
+  <p class="muted">Agen belum pernah melapor untuk PC ini. Pasang agen di PC tersebut, atau ketik "status pc {{ pc.name }}" di Telegram.</p>
+  {% endif %}
+</div>
+
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Riwayat Pemeriksaan</th><th>Status</th><th>Catatan</th><th>Sumber</th><th>Aksi</th></tr></thead>
+  <tbody>
+  {% for inp in pc.inspections[:10] %}
+    <tr>
+      <td>{{ inp.inspected_at|fmtdt }}</td>
+      <td><span class="badge badge-{{ inp.status }}">{{ inp.status }}</span></td>
+      <td class="wrap">{{ inp.note or '-' }}</td>
+      <td>{{ inp.source }}</td>
+      <td>
+        <form method="post" action="{{ url_for('insp.delete', insp_id=inp.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus catatan ini?')">Hapus</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted" style="text-align:center;padding:14px">Belum ada riwayat pemeriksaan.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

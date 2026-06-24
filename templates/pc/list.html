@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Daftar PC{% endblock %}
+{% block content %}
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Nama</th><th>Lokasi</th><th>Spek</th><th>Aksi</th></tr></thead>
+  <tbody>
+  {% for pc in pcs %}
+    <tr>
+      <td><a href="{{ url_for('pc.detail', pc_id=pc.id) }}">{{ pc.name }}</a></td>
+      <td>{{ pc.location or '-' }}</td>
+      <td class="spec">{{ pc.spec_text }}</td>
+      <td><a class="btn btn-sm" href="{{ url_for('pc.edit', pc_id=pc.id) }}">Edit</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="muted" style="text-align:center;padding:14px">Belum ada PC.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

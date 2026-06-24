@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Pemantauan PC{% endblock %}
+{% block content %}
+<div class="stats">
+  <div class="stat"><div class="n">{{ total }}</div><div class="l">Total PC</div></div>
+  <div class="stat"><div class="n" style="color:var(--ok)">{{ ok }}</div><div class="l">OK</div></div>
+  <div class="stat"><div class="n" style="color:var(--bad)">{{ tidak }}</div><div class="l">Tidak Lengkap</div></div>
+  <div class="stat"><div class="n" style="color:var(--neutral)">{{ belum }}</div><div class="l">Belum Diperiksa</div></div>
+  <div class="stat"><div class="n" style="color:var(--ok)">{{ online_count }}</div><div class="l">Agen Online</div></div>
+</div>
+
+<div class="toolbar">
+  <form method="get">
+    <input type="text" name="q" value="{{ q }}" placeholder="cari nama/lokasi PC">
+    <select name="status">
+      <option value="">Semua status</option>
+      <option value="OK" {% if status_filter=='OK' %}selected{% endif %}>OK</option>
+      <option value="TIDAK_LENGKAP" {% if status_filter=='TIDAK_LENGKAP' %}selected{% endif %}>Tidak Lengkap</option>
+      <option value="BELUM" {% if status_filter=='BELUM' %}selected{% endif %}>Belum Diperiksa</option>
+    </select>
+    <button class="btn btn-primary btn-sm">Filter</button>
+    <a class="btn btn-sm" href="{{ url_for('main.index') }}">Reset</a>
+  </form>
+</div>
+
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Nama PC</th>
+      <th class="wrap">Lokasi</th>
+      <th class="wrap">Spek Standar</th>
+      <th>Status</th>
+      <th>Agen</th>
+      <th>IP</th>
+      <th>Last Seen</th>
+      <th class="wrap">Catatan Terakhir</th>
+      <th>Pemeriksaan Terakhir</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    {% set pc = r.pc %}
+    {% set latest = r.latest %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td><a href="{{ url_for('pc.detail', pc_id=pc.id) }}"><strong>{{ pc.name }}</strong></a></td>
+      <td class="wrap">{{ pc.location or '-' }}</td>
+      <td class="wrap spec">{{ pc.spec_text }}</td>
+      <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+      <td>
+        {% if r.online %}
+          <span class="badge badge-OK">● ONLINE</span>
+        {% else %}
+          <span class="badge badge-BELUM">○ OFFLINE</span>
+        {% endif %}
+      </td>
+      <td class="spec">{{ r.ip or '-' }}</td>
+      <td>{{ r.last_seen|fmtdt if r.last_seen else '-' }}</td>
+      <td class="wrap">{{ latest.note if latest else '-' }}</td>
+      <td>{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
+      <td>
+        <a class="btn btn-sm" href="{{ url_for('insp.add', pc_id=pc.id) }}">Periksa</a>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="11" class="muted" style="text-align:center;padding:18px">Belum ada PC terdaftar. Tambahkan dahulu.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

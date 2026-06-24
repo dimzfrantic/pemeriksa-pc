@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Catat Pemeriksaan{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Catat Pemeriksaan</h2>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="full">
+        <label>PC *</label>
+        <select name="pc_id" required style="width:100%">
+          {% for p in pcs %}
+            <option value="{{ p.id }}" {% if pc and pc.id==p.id %}selected{% endif %}>{{ p.name }}{% if p.location %} — {{ p.location }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Status</label>
+        <select name="status" style="width:100%">
+          <option value="OK">OK</option>
+          <option value="TIDAK_LENGKAP">TIDAK LENGKAP</option>
+        </select>
+      </div>
+      <div>
+        <label>Tanggal &amp; Jam (default sekarang)</label>
+        <input type="text" name="inspected_at" placeholder="YYYY-MM-DDTHH:MM" style="width:100%">
+      </div>
+      <div class="full">
+        <label>Catatan (mis: hilang ram, gpu rusak)</label>
+        <textarea name="note" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary">Simpan</button>
+      <a class="btn" href="{{ url_for('main.index') }}">Batal</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

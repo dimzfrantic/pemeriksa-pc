@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if pc else 'Tambah' }} PC{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>{{ 'Edit' if pc else 'Tambah' }} PC</h2>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="full">
+        <label>Nama PC *</label>
+        <input type="text" name="name" value="{{ pc.name if pc else '' }}" required style="width:100%">
+      </div>
+      <div class="full">
+        <label>Lokasi / Ruangan</label>
+        <input type="text" name="location" value="{{ pc.location if pc else '' }}" style="width:100%">
+      </div>
+      <div>
+        <label>Jumlah Keping RAM</label>
+        <input type="number" name="ram_sticks" min="0" value="{{ pc.ram_sticks if pc else 2 }}">
+      </div>
+      <div>
+        <label>Kapasitas RAM / keping (GB)</label>
+        <input type="number" name="ram_capacity_gb" min="0" value="{{ pc.ram_capacity_gb if pc else 8 }}">
+      </div>
+      <div>
+        <label>Jumlah SSD</label>
+        <input type="number" name="ssd_count" min="0" value="{{ pc.ssd_count if pc else 1 }}">
+      </div>
+      <div>
+        <label>Kapasitas SSD / keping (GB)</label>
+        <input type="number" name="ssd_capacity_gb" min="0" value="{{ pc.ssd_capacity_gb if pc else 512 }}">
+      </div>
+      <div class="full">
+        <label>GPU (opsional)</label>
+        <input type="text" name="gpu_name" value="{{ pc.gpu_name if pc else '' }}" style="width:100%" placeholder="mis: NVIDIA GT 710 (kosongkan bila tidak wajib)">
+      </div>
+      <div>
+        <label>Jumlah Monitor</label>
+        <input type="number" name="monitor_count" min="0" value="{{ pc.monitor_count if pc else 1 }}">
+      </div>
+      <div>
+        <label>Ukuran Monitor (inch)</label>
+        <input type="number" name="monitor_size_inch" min="0" value="{{ pc.monitor_size_inch if pc else 24 }}">
+      </div>
+      <div class="full">
+        <label>Merk Monitor (opsional)</label>
+        <input type="text" name="monitor_brand" value="{{ pc.monitor_brand if pc else '' }}" style="width:100%" placeholder="mis: Dell, Samsung, LG (kosongkan bila tidak perlu)">
+      </div>
+      <div class="full">
+        <label>Catatan</label>
+        <textarea name="notes" rows="2">{{ pc.notes if pc else '' }}</textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary">Simpan</button>
+      {% if pc %}<a class="btn" href="{{ url_for('pc.detail', pc_id=pc.id) }}">Batal</a>{% else %}<a class="btn" href="{{ url_for('main.index') }}">Batal</a>{% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}
