@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>{% block title %}Pemantauan PC Kemenkum Jabar{% endblock %}</title>
+<title>{% block title %}{{ APP_TITLE }}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">🖥️ Pemantauan PC — Kantor Wilayah Kemenkum Jawa Barat</div>
+  <div class="brand">🖥️ {{ APP_TITLE }} — {{ ORG_NAME }}</div>
   <nav class="nav">
     <a href="{{ url_for('main.index') }}">Dashboard</a>
     <a href="{{ url_for('pc.add') }}">+ Tambah PC</a>
@@ -32,7 +32,7 @@
 </main>
 
 <footer class="footer">
-  <small>Pemantauan PC Kemenkum Jabar · lokal · port 5080</small>
+  <small>{{ APP_TITLE }} · lokal · port 5080</small>
 </footer>
 </body>
 </html>

@@ -37,6 +37,13 @@ def create_app(config_class=Config):
         except Exception:
             return str(value)
 
+    @app.context_processor
+    def inject_branding():
+        return {
+            "ORG_NAME": app.config.get("ORG_NAME", "Instansi"),
+            "APP_TITLE": app.config.get("APP_TITLE", "Pemantauan PC"),
+        }
+
     return app
 
 

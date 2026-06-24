@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Pemeriksaan otomatis mingguan PC - Kementerian Hukum Jabar.
+Pemeriksaan otomatis mingguan PC.
 
 Dijalankan oleh cron (Senin 08:00 WIB). Untuk setiap PC terdaftar:
 - ambil snapshot agen terakhir (PCLive)
 - offline bila laporan basi -> catat status OFFLINE
 - online -> bandingkan spek aktual vs standar -> catat OK / TIDAK_LENGKAP
 Lalu cetak ringkasan ke stdout (dikirim ke topik Telegram "Pemeriksaan PC"
-oleh cron Hermes / dipakai oleh skrip pengirim).
+oleh penjadwal cron / dipakai oleh skrip pengirim).
 
 Dijalankan sebagai: python weekly_check.py
 """
@@ -52,11 +52,12 @@ def run():
         db.session.commit()
 
         # Ringkasan untuk dikirim ke Telegram
+        org_name = app.config.get("ORG_NAME", "Instansi")
         now = _dt.datetime.now().strftime("%d %b %Y, %H:%M")
         total = len(pcs)
         lines = [
             f"📋 Pemeriksaan Otomatis Mingguan PC",
-            f"Kementerian Hukum Jawa Barat — {now}",
+            f"{org_name} — {now}",
             "",
             f"Total unit: {total}",
             f"✅ Lengkap (OK): {len(ok)}",

@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================
-REM  PC Monitor Agent - Installer EXE (Kemenkum Jabar)
+REM  PC Monitor Agent - Installer EXE
 REM  Untuk dijalankan di tiap PC. TIDAK perlu Python.
 REM  Agen auto-start sendiri via registry Run saat dijalankan.
 REM ============================================================
@@ -10,7 +10,7 @@ set "AGENTDIR=%~dp0"
 set "AGENTDIR=%AGENTDIR:~0,-1%"
 
 echo.
-echo === Installer PC Monitor Agent (EXE) - Kemenkum Jabar ===
+echo === Installer PC Monitor Agent (EXE) ===
 echo Folder: %AGENTDIR%
 echo.
 

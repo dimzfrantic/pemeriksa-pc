@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Telegram poller untuk Pemantauan PC Kemenkum Jabar.
+"""Telegram poller untuk aplikasi Pemantauan PC.
 
 Poller ini berjalan sebagai proses terpisah (service systemd terpisah).
-Memakai token bot Telegram BARU (pemeriksapc_bot), bukan token Hermes/Sikumjabar.
+Memakai token bot Telegram khusus aplikasi ini (bot terpisah).
 
 Hanya memproses pesan dari:
 - Chat ID yang ada di TELEGRAM_ALLOWED_CHAT_IDS (CSV)
@@ -46,6 +46,12 @@ for x in os.environ.get("TELEGRAM_ALLOWED_THREAD_IDS", "").split(","):
     x = x.strip()
     if x.lstrip("-").isdigit():
         ALLOWED_THREADS.add(int(x))
+
+# Branding (diisi via .env; default generik agar kode netral)
+ORG_NAME = os.environ.get("ORG_NAME", "Instansi").strip()
+APP_TITLE = os.environ.get("APP_TITLE", "Pemantauan PC").strip()
+ASSISTANT_NAME = os.environ.get("ASSISTANT_NAME", "Asisten PC").strip()
+SAPAAN = os.environ.get("ASSISTANT_SAPAAN", "Bos").strip()
 
 # Konfigurasi AI fallback
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "").rstrip("/")
@@ -96,7 +102,7 @@ def handle(text, chat_id, thread_id=None):
         if not items:
             send(chat_id, "Belum ada PC terdaftar.", thread_id)
             return
-        lines = ["<b>Daftar PC — Pemantauan Kemenkum Jabar</b>", ""]
+        lines = [f"<b>Daftar PC — {APP_TITLE}</b>", ""]
         for it in items:
             spec = it.get("spec", "")
             status = it.get("status", "BELUM")
@@ -119,17 +125,24 @@ def handle(text, chat_id, thread_id=None):
 
     if low in ("/pchelp", "pc help", "help", "/help", "bantuan"):
         send(chat_id, (
-            "<b>Panduan Pemeriksaan PC — Kemenkum Jabar</b>\n\n"
-            "<b>Mencatat hasil pemeriksaan:</b>\n"
+            f"<b>Panduan Pemeriksaan PC — {APP_TITLE}</b>\n\n"
+            "<b>1. Mencatat hasil pemeriksaan (manual):</b>\n"
             "<code>pc &lt;nama&gt; ok</code> — tandai PC lengkap/normal\n"
             "<code>pc &lt;nama&gt; hilang ram</code> — tandai TIDAK LENGKAP + catatan\n"
             "<code>pc &lt;nama&gt; ssd rusak</code> — catatan bebas lain\n\n"
-            "<b>Pemeriksaan otomatis (via agen):</b>\n"
-            "<code>status pc &lt;nama&gt;</code> — cek online/offline + spek aktual vs standar\n\n"
-            "<b>Melihat data:</b>\n"
-            "<code>list</code> — tampilkan semua PC + spek lengkap + status\n"
+            "<b>2. Pemeriksaan otomatis (via agen):</b>\n"
+            "<code>status pc &lt;nama&gt;</code> — cek PC hidup/mati + baca spek aktual\n"
+            "    (RAM/SSD/GPU) lalu bandingkan dengan spek standar:\n"
+            "    🔴 OFFLINE jika PC/agen mati\n"
+            "    ✅ OK jika spek lengkap\n"
+            "    ⚠️ TIDAK LENGKAP + rincian jika ada yang kurang\n\n"
+            "<b>3. Melihat data:</b>\n"
+            "<code>list</code> — daftar semua PC + spek + status + last seen\n"
             "<code>help</code> — tampilkan panduan ini\n\n"
-            "<i>Contoh: ketik</i> <code>pc saharjo ok</code> <i>untuk menandai PC Saharjo sudah diperiksa dan lengkap.</i>"
+            "<b>4. Tanya bebas (mode AI):</b>\n"
+            "Ketik pertanyaan apa saja seputar data PC, mis.\n"
+            "<i>\"PC mana yang tidak lengkap?\"</i> atau <i>\"kapan Pc Aula terakhir diperiksa?\"</i>\n\n"
+            "<i>Contoh cepat:</i> <code>pc saharjo ok</code> atau <code>status pc aula</code>"
         ), thread_id)
         return
 
@@ -237,17 +250,16 @@ def handle(text, chat_id, thread_id=None):
 
 
 SYSTEM_PROMPT = (
-    "Anda adalah SikumJabar, asisten digital Kepala Kantor Wilayah Kementerian Hukum "
-    "(Kemenkum) Jawa Barat, khusus untuk topik PEMERIKSAAN/PEMANTAUAN UNIT PC.\n\n"
+    f"Anda adalah {ASSISTANT_NAME}, asisten digital untuk {ORG_NAME}, "
+    "khusus untuk topik PEMERIKSAAN/PEMANTAUAN UNIT PC.\n\n"
     "ATURAN KETAT:\n"
     "1. Anda HANYA boleh menjawab berdasarkan DATA PEMERIKSAAN PC yang diberikan di bawah. "
     "Dilarang mengarang, menebak, atau memakai pengetahuan di luar data tersebut.\n"
-    "2. Jika pertanyaan di luar topik pemantauan PC (mis. politik, cuaca, harmonisasi, tiket insiden, "
-    "pengetahuan umum), tolak dengan sopan dan arahkan kembali ke topik pemeriksaan PC.\n"
+    "2. Jika pertanyaan di luar topik pemantauan PC (politik, cuaca, pengetahuan umum, "
+    "atau urusan lain di luar data PC), tolak dengan sopan dan arahkan kembali ke topik pemeriksaan PC.\n"
     "3. Jika data yang diminta tidak ada, katakan apa adanya bahwa data belum tersedia.\n"
-    "4. Gunakan sapaan 'Bos'. Jawaban ringkas, rapi, HP-friendly (teks polos, boleh emoji ringan).\n"
-    "5. Gunakan istilah 'Kementerian Hukum' atau 'Kemenkum'.\n"
-    "6. Untuk waktu/tanggal, pakai apa adanya dari data.\n"
+    f"4. Gunakan sapaan '{SAPAAN}'. Jawaban ringkas, rapi, HP-friendly (teks polos, boleh emoji ringan).\n"
+    "5. Untuk waktu/tanggal, pakai apa adanya dari data.\n"
 )
 
 
@@ -255,7 +267,7 @@ def ai_answer(question, chat_id, thread_id=None):
     """Mode AI fallback: jawab pertanyaan bebas, dibatasi pada data pemeriksaan PC."""
     if not (LLM_BASE_URL and LLM_API_KEY and LLM_MODEL):
         send(chat_id, (
-            "Maaf Bos, perintah tidak dikenali. Ketik <code>help</code> untuk "
+            f"Maaf {SAPAAN}, perintah tidak dikenali. Ketik <code>help</code> untuk "
             "melihat daftar perintah, atau <code>list</code> untuk melihat data PC."
         ), thread_id)
         return
@@ -301,7 +313,7 @@ def ai_answer(question, chat_id, thread_id=None):
         )
         if resp.status_code != 200:
             log.warning("LLM HTTP %s: %s", resp.status_code, resp.text[:300])
-            send(chat_id, "Maaf Bos, mode AI sedang tidak tersedia. Silakan gunakan <code>list</code> atau <code>help</code>.", thread_id)
+            send(chat_id, f"Maaf {SAPAAN}, mode AI sedang tidak tersedia. Silakan gunakan <code>list</code> atau <code>help</code>.", thread_id)
             return
         # Router mengembalikan SSE stream; kumpulkan delta content.
         # Paksa UTF-8 agar emoji tidak rusak (mojibake): tanpa ini requests
@@ -335,14 +347,14 @@ def ai_answer(question, chat_id, thread_id=None):
                 continue
         answer = ("".join(chunks)).strip()
         if not answer:
-            send(chat_id, "Maaf Bos, mode AI tidak mengembalikan jawaban.", thread_id)
+            send(chat_id, f"Maaf {SAPAAN}, mode AI tidak mengembalikan jawaban.", thread_id)
             return
         # Telegram HTML aman: escape < & >
         safe = answer.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         send(chat_id, safe, thread_id)
     except Exception as e:
         log.exception("ai_answer error: %s", e)
-        send(chat_id, f"Maaf Bos, terjadi kendala pada mode AI: {e}", thread_id)
+        send(chat_id, f"Maaf {SAPAAN}, terjadi kendala pada mode AI: {e}", thread_id)
 
 
 

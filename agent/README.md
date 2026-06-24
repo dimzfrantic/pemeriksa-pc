@@ -1,16 +1,17 @@
 # PC Monitor Agent - Panduan (EXE, tanpa Python di tiap PC)
-Kementerian Hukum Jawa Barat
 
 Agen ringan Windows. Membaca spek (RAM keping, SSD/HDD + kapasitas, GPU) lalu
-melaporkan ke server pc-monitor tiap 60 detik. Dipakai untuk perintah Telegram
+melaporkan ke server pemeriksa-pc tiap 60 detik. Dipakai untuk perintah Telegram
 `status pc <nama>` dan pemeriksaan otomatis mingguan.
 
-Mengikuti pola spybot windows-agent kantor: build .exe via PyInstaller,
-config via `.env`, auto-start via registry Run (tidak perlu admin).
+Pola: build .exe via PyInstaller, config via `.env`, auto-start via registry Run
+(tidak perlu hak admin).
+
+> Catatan: semua nilai (IP, token, nama) pada contoh di bawah hanya CONTOH.
 
 ## Isi folder
 - `agent.py` — kode agen (Python)
-- `.env.example` — contoh konfigurasi (token sudah terisi)
+- `.env.example` — contoh konfigurasi (placeholder)
 - `build.bat` — build jadi .exe (dijalankan SEKALI di 1 PC ber-Python)
 - `install_agent.bat` — pasang & jalankan agen di tiap PC (pakai .exe)
 - `uninstall_agent.bat` — hentikan & hapus auto-start
@@ -28,14 +29,14 @@ config via `.env`, auto-start via registry Run (tidak perlu admin).
 Di setiap PC yang mau dipantau:
 1. Buat folder, mis. `C:\PCMonitorAgent`.
 2. Salin ke sana: `pcmonitor-agent.exe`, `.env.example`, `install_agent.bat`, `uninstall_agent.bat`.
-3. Salin `.env.example` menjadi `.env`, buka, ubah HANYA `AGENT_NAME` agar sama
-   persis dengan nama PC di aplikasi web (mis. `Pc Aula`).
-   - `SERVER_URL`: http://10.147.20.78:5080 (IP ZeroTier server). Pastikan PC bisa
-     menjangkau IP ini (ZeroTier terpasang), atau ganti ke IP lokal server bila 1 jaringan.
-   - `AGENT_TOKEN`: jangan diubah (sudah benar).
+3. Salin `.env.example` menjadi `.env`, buka, lalu sesuaikan:
+   - `AGENT_NAME` — sama persis dengan nama PC di aplikasi web (mis. `contoh1`).
+   - `SERVER_URL` — alamat server, mis. `http://10.0.0.10:5080`. Pastikan PC dapat
+     menjangkau alamat ini (1 jaringan / VPN).
+   - `AGENT_TOKEN` — samakan dengan `AGENT_TOKEN` di `.env` server.
 4. Klik dobel `install_agent.bat`.
    - Agen jalan, lapor sekali, dan memasang dirinya auto-start (registry Run).
-5. Cek di server: ketik `status pc aula` di topik Telegram "Pemeriksaan PC".
+5. Cek di server: ketik `status pc contoh1` di topik Telegram yang diizinkan.
 
 ## Uji manual (opsional)
 Dobel-klik exe dengan argumen `once` lewat CMD:
@@ -51,9 +52,9 @@ Dobel-klik `uninstall_agent.bat` (menghentikan proses + hapus auto-start).
 - Agen hanya koneksi KELUAR ke server (tidak buka port di PC, aman dari firewall).
 - Identitas pakai `AGENT_NAME` (manual), bukan IP -> aman walau IP DHCP berubah.
 - Server menganggap PC OFFLINE bila tidak ada laporan > 3 menit.
-- Auto-start pakai registry Run user (aktif setelah login Windows), sama seperti spybot.
+- Auto-start pakai registry Run user (aktif setelah login Windows).
 - Bila antivirus memblokir .exe PyInstaller: whitelist folder agen, atau pakai
-  alternatif Python embeddable (minta dibuatkan).
+  alternatif Python embeddable.
 
 ## Spek aktual vs standar
 Server membandingkan spek aktual (dari agen) dengan spek STANDAR yang diisi di web

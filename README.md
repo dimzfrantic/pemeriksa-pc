@@ -2,6 +2,8 @@
 
 Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RAM, SSD/HDD, GPU, monitor), dengan pemeriksaan otomatis real-time lewat agen Windows dan kontrol penuh dari Telegram.
 
+> Catatan: seluruh ID grup, IP, token, dan nama pada dokumentasi ini hanya CONTOH. Ganti dengan nilai milik Anda sendiri sebelum dipakai.
+
 ## Struktur repo
 
 - `/` (root) — aplikasi web + server (Flask + SQLite), bot Telegram poller, pemeriksaan mingguan
@@ -11,20 +13,20 @@ Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RA
 
 - Dashboard web: daftar PC, spek standar, status pemeriksaan, status agen (online/IP/last seen)
 - Tambah/edit PC dan input pemeriksaan manual lewat web
-- Bot Telegram khusus topik "Pemeriksaan PC":
+- Bot Telegram khusus satu topik forum:
   - `pc <nama> ok` / `pc <nama> <catatan>` — catat hasil pemeriksaan manual
   - `status pc <nama>` — pemeriksaan otomatis via agen (online/offline + banding spek aktual vs standar)
   - `list` — daftar PC + spek + status, `help` — panduan
-  - Pertanyaan bebas → mode AI yang dibatasi hanya data pemeriksaan PC
+  - Pertanyaan bebas → mode AI yang dibatasi hanya data pemeriksaan PC (opsional)
 - Agen Windows: baca spek via WMI, lapor ke server (koneksi keluar, aman dari firewall), auto-start
-- Pemeriksaan otomatis mingguan (Senin 08:00 WIB) + ringkasan terkirim ke Telegram
+- Pemeriksaan otomatis mingguan + ringkasan terkirim ke Telegram
 - Deteksi komponen hilang: bila spek aktual < standar → status TIDAK LENGKAP + rincian
 
 ## Arsitektur singkat
 
 1. Server (Flask, port 5080) menyimpan master spek PC + riwayat pemeriksaan (SQLite).
 2. Agen Windows di tiap PC mengirim heartbeat berisi spek aktual + IP tiap 60 detik (push, bukan pull) — aman untuk jaringan DHCP dan tanpa domain.
-3. Bot Telegram (poller terpisah) menerima perintah di topik "Pemeriksaan PC" dan memanggil API server.
+3. Bot Telegram (poller terpisah) menerima perintah di satu topik forum dan memanggil API server.
 4. Server membandingkan spek AKTUAL (agen) dengan STANDAR (database) → OK / TIDAK LENGKAP / OFFLINE.
 
 ## Komponen utama
@@ -44,14 +46,14 @@ Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RA
 Sebelum digunakan, ganti seluruh placeholder sensitif (lihat `.env.example`):
 
 - `SECRET_KEY` — string acak panjang
-- `TELEGRAM_BOT_TOKEN` — token bot Telegram khusus pemeriksaan PC
+- `TELEGRAM_BOT_TOKEN` — token bot Telegram khusus aplikasi ini
 - `TELEGRAM_ALLOWED_CHAT_IDS`, `TELEGRAM_ALLOWED_THREAD_IDS` — grup/topik yang diizinkan
 - `AGENT_TOKEN` — token rahasia laporan agen (samakan di server dan tiap agen)
 - `LLM_*` — opsional, untuk mode AI
 
 Jangan pernah commit `.env` riil ke repo. File `.env` dan database sudah diabaikan via `.gitignore`.
 
-## Instalasi server (Ubuntu)
+## Instalasi server (Linux)
 
 ```bash
 git clone git@github.com:dimzfrantic/pemeriksa-pc.git
@@ -73,8 +75,8 @@ jalan setelah logout: `loginctl enable-linger $USER`.
 ### Pemeriksaan mingguan (cron)
 
 ```bash
-# Senin 08:00 WIB
-0 8 * * 1 /path/pemeriksa-pc/run_weekly_check.sh >> /path/pemeriksa-pc/weekly_check.log 2>&1
+# Contoh: tiap Senin 08:00
+0 8 * * 1 /opt/pemeriksa-pc/run_weekly_check.sh >> /opt/pemeriksa-pc/weekly_check.log 2>&1
 ```
 
 ## Instalasi agen (PC Windows)
@@ -85,12 +87,12 @@ Lihat panduan lengkap di [`agent/README.md`](agent/README.md). Ringkasnya:
 2. Sebar `.exe` + `.env` ke tiap PC, ubah `AGENT_NAME` sesuai nama PC, jalankan `install_agent.bat`.
 3. Agen otomatis lapor tiap menit dan auto-start saat login Windows.
 
-## Perintah Telegram (topik Pemeriksaan PC)
+## Perintah Telegram (di topik yang diizinkan)
 
 ```
-pc aula ok                 # catat Pc Aula lengkap
-pc aula hilang ram         # catat tidak lengkap + catatan
-status pc aula             # pemeriksaan otomatis via agen
+pc contoh1 ok              # catat PC "contoh1" lengkap
+pc contoh1 hilang ram      # catat tidak lengkap + catatan
+status pc contoh1          # pemeriksaan otomatis via agen
 list                       # daftar semua PC + status
 help                       # panduan
 ```
@@ -99,4 +101,8 @@ help                       # panduan
 
 - Server menganggap PC OFFLINE bila agen tidak melapor lebih dari `AGENT_OFFLINE_SECONDS` (default 3 menit).
 - Identitas PC memakai `AGENT_NAME` (dipatok manual), bukan IP — aman walau IP DHCP berubah.
-- Timestamp memakai waktu lokal server (WIB).
+- Timestamp memakai waktu lokal server.
+
+## Lisensi
+
+Internal / sesuai kebijakan pemilik repo.

@@ -1,11 +1,11 @@
 """
-PC Monitor Agent - Kementerian Hukum Jawa Barat
+PC Monitor Agent
 ================================================
 
 Agen ringan untuk PC Windows. Membaca spek (RAM/SSD/HDD/GPU) lalu melaporkan
 ke server pc-monitor tiap interval (heartbeat). Hanya koneksi KELUAR (aman dari firewall).
 
-Mengikuti konvensi spybot windows-agent kantor:
+Konvensi:
 - Config via .env di folder yang sama dengan exe (frozen-aware)
 - Auto-start via registry Run HKCU (tidak perlu admin)
 - Build .exe via PyInstaller --onefile --noconsole (build.bat)
@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 
 AGENT_VERSION = "1.0"
 
-# Frozen-aware base dir (sama seperti spybot config.py)
+# Frozen-aware base dir (mendukung PyInstaller --onefile)
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
 else:
@@ -38,7 +38,7 @@ LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 LOG_FILE = LOG_DIR / "pcmonitor-agent.log"
 
-SERVER_URL = os.getenv("SERVER_URL", "http://10.147.20.78:5080").rstrip("/")
+SERVER_URL = os.getenv("SERVER_URL", "http://10.0.0.10:5080").rstrip("/")
 AGENT_NAME = os.getenv("AGENT_NAME", os.getenv("COMPUTERNAME", "windows-agent"))
 AGENT_TOKEN = os.getenv("AGENT_TOKEN", "change-me")
 INTERVAL_SECONDS = int(os.getenv("INTERVAL_SECONDS", "60"))
@@ -56,7 +56,7 @@ def log(msg):
 
 
 def add_to_startup():
-    """Auto-start via registry Run HKCU (pola spybot)."""
+    """Auto-start via registry Run HKCU."""
     if not START_WITH_WINDOWS:
         return
     try:

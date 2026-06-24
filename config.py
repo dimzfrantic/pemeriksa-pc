@@ -29,3 +29,9 @@ class Config:
     AGENT_TOKEN = os.environ.get("AGENT_TOKEN", "").strip()
     # Ambang detik untuk menganggap PC offline (laporan agen terakhir lebih tua dari ini)
     AGENT_OFFLINE_SECONDS = int(os.environ.get("AGENT_OFFLINE_SECONDS", "180"))
+
+    # Branding (diisi via .env; default generik agar repo netral)
+    ORG_NAME = os.environ.get("ORG_NAME", "Instansi").strip()
+    APP_TITLE = os.environ.get("APP_TITLE", "Pemantauan PC").strip()
+    ASSISTANT_NAME = os.environ.get("ASSISTANT_NAME", "Asisten PC").strip()
+    ASSISTANT_SAPAAN = os.environ.get("ASSISTANT_SAPAAN", "Bos").strip()
