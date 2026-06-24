@@ -1,6 +1,6 @@
-# pemeriksa-pc
+# Pemeriksa-PC
 
-Aplikasi pemantauan kelengkapan unit PC di lingkungan Kantor Wilayah Kementerian Hukum Jawa Barat. Mencatat dan memeriksa spek tiap PC (RAM, SSD/HDD, GPU, monitor), dengan pemeriksaan otomatis real-time lewat agen Windows dan kontrol penuh dari Telegram.
+Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RAM, SSD/HDD, GPU, monitor), dengan pemeriksaan otomatis real-time lewat agen Windows dan kontrol penuh dari Telegram.
 
 ## Struktur repo
 
