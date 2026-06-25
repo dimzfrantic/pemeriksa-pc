@@ -12,6 +12,8 @@ class PC(db.Model):
     ram_capacity_gb = db.Column(db.Integer, nullable=False, default=8)  # GB per keping
     ssd_count = db.Column(db.Integer, nullable=False, default=1)
     ssd_capacity_gb = db.Column(db.Integer, nullable=False, default=256)
+    hdd_count = db.Column(db.Integer, nullable=False, default=0)       # 0 = tidak wajib HDD
+    hdd_capacity_gb = db.Column(db.Integer, nullable=False, default=0)  # GB per HDD
     gpu_name = db.Column(db.String(120), default="")  # optional
     monitor_count = db.Column(db.Integer, nullable=False, default=1)
     monitor_size_inch = db.Column(db.Integer, nullable=False, default=24)  # ukuran per monitor (inch)
@@ -37,6 +39,8 @@ class PC(db.Model):
             f"RAM {self.ram_sticks}x{self.ram_capacity_gb}GB",
             f"SSD {self.ssd_count}x{self.ssd_capacity_gb}GB",
         ]
+        if self.hdd_count:
+            parts.append(f"HDD {self.hdd_count}x{self.hdd_capacity_gb}GB")
         if self.gpu_name:
             parts.append(f"GPU {self.gpu_name}")
         mon = f"Monitor {self.monitor_count}x{self.monitor_size_inch}\""

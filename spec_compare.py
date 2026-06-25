@@ -93,12 +93,27 @@ def compare(pc, live):
             f"Kapasitas SSD kurang: aktual {actual_ssd_total}GB dari standar {std_ssd_total}GB"
         )
 
+    # --- HDD (hanya dicek bila standar mensyaratkan HDD) ---
+    hdd = [d for d in disks if str(d.get("media", "")).upper() == "HDD"]
+    actual_hdd_count = len(hdd)
+    actual_hdd_total = sum(int(d.get("size_gb", 0)) for d in hdd)
+    std_hdd_count = getattr(pc, "hdd_count", 0) or 0
+    std_hdd_total = (getattr(pc, "hdd_count", 0) or 0) * (getattr(pc, "hdd_capacity_gb", 0) or 0)
+
+    if std_hdd_count and actual_hdd_count < std_hdd_count:
+        kekurangan.append(
+            f"HDD kurang: aktual {actual_hdd_count} unit dari standar {std_hdd_count} unit"
+        )
+    elif std_hdd_total and actual_hdd_total and actual_hdd_total < std_hdd_total:
+        kekurangan.append(
+            f"Kapasitas HDD kurang: aktual {actual_hdd_total}GB dari standar {std_hdd_total}GB"
+        )
+
     # --- GPU ---
     gpus = _parse(live.gpu_json) or []
     std_gpu = (pc.gpu_name or "").strip()
     if std_gpu and not gpus:
         kekurangan.append(f"GPU tidak terbaca (standar: {std_gpu})")
-
     status = "TIDAK_LENGKAP" if kekurangan else "OK"
     return status, kekurangan
 

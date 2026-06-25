@@ -30,6 +30,14 @@
         <label>Kapasitas SSD / keping (GB)</label>
         <input type="number" name="ssd_capacity_gb" min="0" value="{{ pc.ssd_capacity_gb if pc else 512 }}">
       </div>
+      <div>
+        <label>Jumlah HDD (0 bila tidak ada)</label>
+        <input type="number" name="hdd_count" min="0" value="{{ pc.hdd_count if pc else 0 }}">
+      </div>
+      <div>
+        <label>Kapasitas HDD / unit (GB)</label>
+        <input type="number" name="hdd_capacity_gb" min="0" value="{{ pc.hdd_capacity_gb if pc else 0 }}">
+      </div>
       <div class="full">
         <label>GPU (opsional)</label>
         <input type="text" name="gpu_name" value="{{ pc.gpu_name if pc else '' }}" style="width:100%" placeholder="mis: NVIDIA GT 710 (kosongkan bila tidak wajib)">

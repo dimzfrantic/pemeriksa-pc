@@ -29,6 +29,8 @@ def add():
             ram_capacity_gb=int(request.form.get("ram_capacity_gb") or 8),
             ssd_count=int(request.form.get("ssd_count") or 1),
             ssd_capacity_gb=int(request.form.get("ssd_capacity_gb") or 256),
+            hdd_count=int(request.form.get("hdd_count") or 0),
+            hdd_capacity_gb=int(request.form.get("hdd_capacity_gb") or 0),
             gpu_name=(request.form.get("gpu_name") or "").strip(),
             monitor_count=int(request.form.get("monitor_count") or 1),
             monitor_size_inch=int(request.form.get("monitor_size_inch") or 24),
@@ -93,6 +95,8 @@ def edit(pc_id):
         pc.ram_capacity_gb = int(request.form.get("ram_capacity_gb") or 8)
         pc.ssd_count = int(request.form.get("ssd_count") or 1)
         pc.ssd_capacity_gb = int(request.form.get("ssd_capacity_gb") or 256)
+        pc.hdd_count = int(request.form.get("hdd_count") or 0)
+        pc.hdd_capacity_gb = int(request.form.get("hdd_capacity_gb") or 0)
         pc.gpu_name = (request.form.get("gpu_name") or "").strip()
         pc.monitor_count = int(request.form.get("monitor_count") or 1)
         pc.monitor_size_inch = int(request.form.get("monitor_size_inch") or 24)

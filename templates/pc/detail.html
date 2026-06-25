@@ -6,6 +6,7 @@
   <div class="form-grid">
     <div><label>RAM</label><div class="spec">{{ pc.ram_sticks }} x {{ pc.ram_capacity_gb }} GB</div></div>
     <div><label>SSD</label><div class="spec">{{ pc.ssd_count }} x {{ pc.ssd_capacity_gb }} GB</div></div>
+    {% if pc.hdd_count %}<div><label>HDD</label><div class="spec">{{ pc.hdd_count }} x {{ pc.hdd_capacity_gb }} GB</div></div>{% endif %}
     <div><label>GPU</label><div>{{ pc.gpu_name or '-' }}</div></div>
     <div><label>Monitor</label><div class="spec">{{ pc.monitor_count }} x {{ pc.monitor_size_inch }}"{% if pc.monitor_brand %} {{ pc.monitor_brand }}{% endif %}</div></div>
     <div><label>Catatan</label><div>{{ pc.notes or '-' }}</div></div>

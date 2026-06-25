@@ -32,7 +32,7 @@ agent/               agen Windows (baca spek + lapor)
 
 ## Model data (ringkas)
 - `pcs` — master spek standar: nama (unik), lokasi, RAM (keping & kapasitas),
-  SSD (jumlah & kapasitas), GPU, monitor, catatan.
+  SSD (jumlah & kapasitas), HDD (jumlah & kapasitas, 0 = tidak wajib), GPU, monitor, catatan.
 - `inspections` — riwayat: pc_id, waktu, status, catatan, sumber.
 - `pc_live` — snapshot agen terakhir (1 baris/PC): ip, hostname, last_seen,
   ram/disk/gpu (JSON), prev_fingerprint, was_online. Online bila last_seen <= ambang offline.
