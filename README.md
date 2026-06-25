@@ -19,6 +19,7 @@ Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RA
   - `list` — daftar PC + spek + status, `help` — panduan
   - Pertanyaan bebas → mode AI yang dibatasi hanya data pemeriksaan PC (opsional)
 - Agen Windows: baca spek via WMI, lapor ke server (koneksi keluar, aman dari firewall), auto-start
+- Deteksi perubahan saat PC nyala ulang (boot-check): membandingkan spek saat PC kembali online dengan kondisi terakhir sebelum mati; bila ada komponen berubah (RAM/SSD/HDD/GPU) langsung dicatat ke riwayat dan dikirim notifikasi Telegram sekali, dengan label BERKURANG/BERTAMBAH + perbandingan ke spek standar
 - Pemeriksaan otomatis mingguan + ringkasan terkirim ke Telegram
 - Deteksi komponen hilang: bila spek aktual < standar → status TIDAK LENGKAP + rincian
 
@@ -28,6 +29,7 @@ Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RA
 2. Agen Windows di tiap PC mengirim heartbeat berisi spek aktual + IP tiap 60 detik (push, bukan pull) — aman untuk jaringan DHCP dan tanpa domain.
 3. Bot Telegram (poller terpisah) menerima perintah di satu topik forum dan memanggil API server.
 4. Server membandingkan spek AKTUAL (agen) dengan STANDAR (database) → OK / TIDAK LENGKAP / OFFLINE.
+5. Boot-check: pada transisi OFFLINE → ONLINE, server membandingkan "sidik jari" spek sesi nyala sebelumnya dengan yang baru. Bila berbeda, perubahan dicatat ke riwayat dan dikirim sekali ke Telegram. Perbandingan tidak dilakukan tiap heartbeat (anti-spam) dan tidak saat PC offline.
 
 ## Komponen utama
 
@@ -38,6 +40,7 @@ Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RA
 | `routes/` | Web (dashboard, PC, inspeksi) + API (`/api/agent/report`, `/api/check`, dll) |
 | `spec_compare.py` | Logika banding spek aktual vs standar |
 | `tg_poller.py` | Bot Telegram poller + mode AI |
+| `notifier.py` | Kirim notifikasi ke topik Telegram (boot-check) |
 | `weekly_check.py` | Pemeriksaan otomatis mingguan |
 | `agent/agent.py` | Agen Windows (baca spek + lapor) |
 

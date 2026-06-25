@@ -35,7 +35,15 @@ agent/               agen Windows (baca spek + lapor)
   SSD (jumlah & kapasitas), GPU, monitor, catatan.
 - `inspections` — riwayat: pc_id, waktu, status, catatan, sumber.
 - `pc_live` — snapshot agen terakhir (1 baris/PC): ip, hostname, last_seen,
-  ram/disk/gpu (JSON). Online bila last_seen <= ambang offline.
+  ram/disk/gpu (JSON), prev_fingerprint, was_online. Online bila last_seen <= ambang offline.
+
+## Boot-check (deteksi perubahan saat PC nyala ulang)
+- Pada transisi OFFLINE → ONLINE (heartbeat masuk setelah PC sempat offline),
+  server bandingkan "sidik jari" spek sesi sebelumnya (`prev_fingerprint`) dengan yang baru.
+- Bila beda → catat riwayat (sumber `boot-check`) + kirim notifikasi Telegram sekali,
+  dengan label BERKURANG/BERTAMBAH dan perbandingan ke spek standar.
+- Tidak membandingkan tiap heartbeat (anti-spam) dan tidak saat PC offline.
+- Lihat `spec_compare.fingerprint()` / `spec_compare.diff_change()` dan `notifier.send_telegram()`.
 
 ## API internal (dipakai poller & agen)
 - `POST /api/inspect` — catat pemeriksaan manual.

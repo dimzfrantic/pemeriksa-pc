@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify, abort, current_app
 from extensions import db
 from models import PC, Inspection, PCLive
 import spec_compare
+import notifier
 
 api_bp = Blueprint("api", __name__)
 
@@ -125,18 +126,80 @@ def agent_report():
     if not pc_name:
         return jsonify(ok=False, error="PC_NAME_REQUIRED"), 400
 
+    offline_secs = int(current_app.config.get("AGENT_OFFLINE_SECONDS", 180))
+    now = _dt.datetime.now()
+
     live = PCLive.query.filter_by(pc_name=pc_name).first()
-    if not live:
+
+    # Snapshot LAMA (sebelum ditimpa) untuk deteksi perubahan saat nyala ulang
+    old_snapshot = None
+    was_offline_before = True
+    prev_fp = ""
+    if live:
+        old_snapshot = {
+            "ram_json": live.ram_json,
+            "disk_json": live.disk_json,
+            "gpu_json": live.gpu_json,
+        }
+        # Dianggap "baru nyala" bila status tercatat offline ATAU laporan terakhir sudah basi
+        was_offline_before = (not live.was_online) or (not live.is_online(offline_secs))
+        prev_fp = live.prev_fingerprint or ""
+    else:
         live = PCLive(pc_name=pc_name)
         db.session.add(live)
 
+    new_fp = spec_compare.fingerprint(
+        data.get("ram") and _json.dumps(data.get("ram")) or "",
+        data.get("disks") and _json.dumps(data.get("disks")) or "",
+        data.get("gpus") and _json.dumps(data.get("gpus")) or "",
+    )
+
+    # === BOOT-CHECK: deteksi perubahan spek saat PC baru menyala ===
+    # Hanya saat transisi OFFLINE -> ONLINE, dan hanya bila ada acuan sesi sebelumnya.
+    if was_offline_before and prev_fp and prev_fp != new_fp and old_snapshot is not None:
+        new_snapshot = {
+            "ram_json": _json.dumps(data.get("ram") or {}, ensure_ascii=False),
+            "disk_json": _json.dumps(data.get("disks") or [], ensure_ascii=False),
+            "gpu_json": _json.dumps(data.get("gpus") or [], ensure_ascii=False),
+        }
+        changes = spec_compare.diff_change(old_snapshot, new_snapshot)
+        if changes:
+            # Catat ke riwayat
+            pc_master = _find_pc(pc_name)
+            note = "Perubahan saat PC nyala ulang: " + "; ".join(changes)
+            if pc_master:
+                db.session.add(Inspection(
+                    pc_id=pc_master.id, status="TIDAK_LENGKAP" if any("BERKURANG" in c for c in changes) else "OK",
+                    note=note, source="boot-check",
+                ))
+            # Kirim notifikasi Telegram (sekali, di momen nyala)
+            org = current_app.config.get("ORG_NAME", "Instansi")
+            detail = "\n".join(f"• {c}" for c in changes)
+            cmp_extra = ""
+            if pc_master:
+                _shim = type("S", (), {
+                    "ram_json": new_snapshot["ram_json"],
+                    "disk_json": new_snapshot["disk_json"],
+                    "gpu_json": new_snapshot["gpu_json"],
+                })()
+                st, kurang = spec_compare.compare(pc_master, _shim)
+                if kurang:
+                    cmp_extra = "\n\nDibanding spek standar:\n" + "\n".join(f"• {k}" for k in kurang)
+            notifier.send_telegram(
+                f"⚠️ <b>{pc_name}</b> menyala dengan perubahan spek\n{detail}{cmp_extra}\n\n"
+                f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
+            )
+
+    # Simpan/timpa snapshot terkini
     live.hostname = (data.get("hostname") or "").strip()
     live.ip = (data.get("ip") or "").strip()
     live.agent_version = (data.get("agent_version") or "").strip()
-    live.last_seen = _dt.datetime.now()
+    live.last_seen = now
     live.ram_json = _json.dumps(data.get("ram") or {}, ensure_ascii=False)
     live.disk_json = _json.dumps(data.get("disks") or [], ensure_ascii=False)
     live.gpu_json = _json.dumps(data.get("gpus") or [], ensure_ascii=False)
+    live.prev_fingerprint = new_fp
+    live.was_online = True
     db.session.commit()
     return jsonify(ok=True, pc_name=pc_name, last_seen=live.last_seen.isoformat())
 

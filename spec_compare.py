@@ -101,3 +101,76 @@ def compare(pc, live):
 
     status = "TIDAK_LENGKAP" if kekurangan else "OK"
     return status, kekurangan
+
+
+def _ram_summary(ram):
+    sticks = ram.get("sticks") or []
+    total = ram.get("total_gb") or sum(int(x.get("size_gb", 0)) for x in sticks)
+    return len(sticks), int(total or 0)
+
+
+def _disk_summary(disks):
+    ssd = [d for d in disks if str(d.get("media", "")).upper() == "SSD"]
+    hdd = [d for d in disks if str(d.get("media", "")).upper() == "HDD"]
+    return (
+        len(ssd), sum(int(d.get("size_gb", 0)) for d in ssd),
+        len(hdd), sum(int(d.get("size_gb", 0)) for d in hdd),
+    )
+
+
+def fingerprint(ram_json, disk_json, gpu_json):
+    """Sidik jari spek dari JSON mentah. Dipakai deteksi perubahan antar sesi nyala.
+
+    Bentuk: 'RAM:2x16|SSD:2u/1024|HDD:1u/1000|GPU:Intel UHD 630'
+    (jumlah keping x total RAM | jumlah & total SSD | jumlah & total HDD | nama GPU urut)
+    """
+    ram = _parse(ram_json) or {}
+    disks = _parse(disk_json) or []
+    gpus = _parse(gpu_json) or []
+    sc, rt = _ram_summary(ram)
+    ss, sst, hc, hct = _disk_summary(disks)
+    gnames = "+".join(sorted(g.get("name", "?") for g in gpus)) if gpus else "-"
+    return f"RAM:{sc}x{rt}|SSD:{ss}u/{sst}|HDD:{hc}u/{hct}|GPU:{gnames}"
+
+
+def diff_change(old_json, new_json):
+    """Bandingkan dua snapshot (lama vs baru) -> daftar perubahan berlabel.
+
+    old_json / new_json: dict berisi {"ram_json","disk_json","gpu_json"}.
+    Mengembalikan list string, mis. ["RAM BERKURANG: 16GB -> 8GB (-8GB, 2 -> 1 keping)"].
+    Kosong bila tidak ada perubahan terdeteksi.
+    """
+    changes = []
+    old_ram = _parse(old_json.get("ram_json")) or {}
+    new_ram = _parse(new_json.get("ram_json")) or {}
+    o_sc, o_rt = _ram_summary(old_ram)
+    n_sc, n_rt = _ram_summary(new_ram)
+    if o_rt != n_rt or o_sc != n_sc:
+        arah = "BERTAMBAH" if n_rt > o_rt else "BERKURANG"
+        selisih = n_rt - o_rt
+        changes.append(
+            f"RAM {arah}: {o_rt}GB -> {n_rt}GB ({selisih:+d}GB, {o_sc} -> {n_sc} keping)"
+        )
+
+    old_disks = _parse(old_json.get("disk_json")) or []
+    new_disks = _parse(new_json.get("disk_json")) or []
+    o_ss, o_sst, o_hc, o_hct = _disk_summary(old_disks)
+    n_ss, n_sst, n_hc, n_hct = _disk_summary(new_disks)
+    if o_ss != n_ss or o_sst != n_sst:
+        arah = "BERTAMBAH" if n_sst > o_sst else "BERKURANG"
+        changes.append(
+            f"SSD {arah}: {o_ss} unit/{o_sst}GB -> {n_ss} unit/{n_sst}GB"
+        )
+    if o_hc != n_hc or o_hct != n_hct:
+        arah = "BERTAMBAH" if n_hct > o_hct else "BERKURANG"
+        changes.append(
+            f"HDD {arah}: {o_hc} unit/{o_hct}GB -> {n_hc} unit/{n_hct}GB"
+        )
+
+    old_gpus = sorted(g.get("name", "?") for g in (_parse(old_json.get("gpu_json")) or []))
+    new_gpus = sorted(g.get("name", "?") for g in (_parse(new_json.get("gpu_json")) or []))
+    if old_gpus != new_gpus:
+        changes.append(
+            f"GPU BERUBAH: [{', '.join(old_gpus) or '-'}] -> [{', '.join(new_gpus) or '-'}]"
+        )
+    return changes

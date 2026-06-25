@@ -72,6 +72,9 @@ class PCLive(db.Model):
     disk_json = db.Column(db.Text, default="")   # [{"model":"...","size_gb":512,"media":"SSD"},...]
     gpu_json = db.Column(db.Text, default="")    # [{"name":"...","type":"..."}]
     agent_version = db.Column(db.String(40), default="")
+    # Deteksi perubahan saat PC nyala ulang (boot-check)
+    prev_fingerprint = db.Column(db.Text, default="")  # sidik jari spek sesi nyala sebelumnya
+    was_online = db.Column(db.Boolean, default=False)  # status online terakhir yang diketahui
 
     def __repr__(self):
         return f"<PCLive {self.pc_name} {self.last_seen}>"
