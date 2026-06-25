@@ -9,18 +9,55 @@ import notifier
 api_bp = Blueprint("api", __name__)
 
 
+def _norm(s):
+    """Normalisasi nama untuk pencocokan: lower, rapikan spasi, buang prefix 'pc'."""
+    s = " ".join((s or "").strip().lower().split())
+    if s.startswith("pc "):
+        s = s[3:].strip()
+    return s
+
+
 def _find_pc(name):
-    """Cari PC berdasarkan nama persis atau case-insensitive contains."""
+    """Cari PC dengan beberapa strategi berurutan (toleran besar/kecil & prefix 'Pc').
+
+    Urutan: (1) cocok persis case-insensitive, (2) cocok setelah normalisasi
+    (abaikan prefix 'Pc'/spasi), (3) cocok kata utuh unik, (4) 'mengandung' unik.
+    Mengembalikan PC bila satu kandidat jelas; None bila tidak ada atau ambigu.
+    """
     name = (name or "").strip()
     if not name:
         return None
-    pc = PC.query.filter_by(name=name).first()
-    if pc:
-        return pc
-    # Cari yang mengandung nama tsb (lower) jika nama unik
-    lowered = name.lower()
-    matches = [p for p in PC.query.all() if lowered in p.name.lower()]
-    return matches[0] if len(matches) == 1 else None
+
+    all_pcs = PC.query.all()
+
+    # 1) Persis (case-insensitive)
+    low = name.lower()
+    for p in all_pcs:
+        if p.name.lower() == low:
+            return p
+
+    # 2) Normalisasi (abaikan prefix 'Pc' dan spasi berlebih) — harus tepat sama
+    target = _norm(name)
+    norm_matches = [p for p in all_pcs if _norm(p.name) == target]
+    if len(norm_matches) == 1:
+        return norm_matches[0]
+    if len(norm_matches) > 1:
+        return None  # ambigu
+
+    # 3) Cocok sebagai kata utuh (mis. "aula" cocok "Pc Aula", tidak ke "Pc Aula2")
+    import re as _re
+    word_matches = [
+        p for p in all_pcs
+        if _re.search(r"\b" + _re.escape(target) + r"\b", _norm(p.name))
+    ]
+    if len(word_matches) == 1:
+        return word_matches[0]
+    if len(word_matches) > 1:
+        return None  # ambigu
+
+    # 4) 'Mengandung' — hanya bila unik
+    contains = [p for p in all_pcs if target and target in _norm(p.name)]
+    return contains[0] if len(contains) == 1 else None
 
 
 @api_bp.post("/inspect")
