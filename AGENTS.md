@@ -47,9 +47,9 @@ agent/               agen Windows (baca spek + lapor)
      (`prev_fingerprint`) dengan yang baru. Deteksi komponen benar-benar berubah
      (RAM/SSD/HDD/GPU dicabut/ditambah), dengan label BERKURANG/BERTAMBAH.
   2. **Boot compliance check** — bandingkan spek aktual vs spek STANDAR (tabel pcs).
-     Notif SEKALI saat status kepatuhan berubah jadi `TIDAK_LENGKAP`
-     (disimpan di `last_compliance`), lalu diam sampai kondisinya berubah.
-     Ini menangkap kasus standar diubah lalu PC di-restart.
+     Notif SEKALI saat status kepatuhan berubah: OK→TIDAK_LENGKAP ("⚠️ tidak sesuai standar")
+     maupun TIDAK_LENGKAP→OK ("✅ pulih/sudah sesuai"). Status disimpan di `last_compliance`
+     (anti-spam: diam selama status tidak berubah). Menangkap kasus standar diubah lalu PC di-restart.
 - Keduanya catat riwayat (sumber `boot-check`) + kirim notifikasi Telegram.
 - Pemeriksaan hanya saat boot (bukan tiap heartbeat), jadi tidak spam.
 - Lihat `spec_compare.fingerprint()` / `diff_change()` / `compare()` dan `notifier.send_telegram()`.

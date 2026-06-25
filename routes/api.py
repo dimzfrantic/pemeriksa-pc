@@ -252,9 +252,9 @@ def agent_report():
             comp_status, comp_kurang = spec_compare.compare(pc_master, _shim2)
             new_compliance = comp_status
             prev_compliance = (live.last_compliance or "")
-            # Notif hanya bila berubah menjadi TIDAK_LENGKAP (mis. OK/'' -> TIDAK_LENGKAP)
+            org = current_app.config.get("ORG_NAME", "Instansi")
+            # Notif saat berubah menjadi TIDAK_LENGKAP (mis. OK/'' -> TIDAK_LENGKAP)
             if comp_status == "TIDAK_LENGKAP" and prev_compliance != "TIDAK_LENGKAP":
-                org = current_app.config.get("ORG_NAME", "Instansi")
                 rincian = "\n".join(f"• {k}" for k in comp_kurang) if comp_kurang else "• tidak sesuai standar"
                 db.session.add(Inspection(
                     pc_id=pc_master.id, status="TIDAK_LENGKAP",
@@ -263,6 +263,21 @@ def agent_report():
                 ))
                 notifier.send_telegram(
                     f"⚠️ <b>{pc_name}</b> menyala — spek TIDAK SESUAI STANDAR\n{rincian}\n\n"
+                    f"Spek aktual: {spec_compare.summarize_actual(_shim2)}\n"
+                    f"Spek standar: {pc_master.spec_text}\n\n"
+                    f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
+                )
+            # Notif saat PULIH (TIDAK_LENGKAP -> OK). Hanya bila sebelumnya benar-benar
+            # tercatat TIDAK_LENGKAP, agar tidak berbunyi pada pendaftaran/boot pertama.
+            elif comp_status == "OK" and prev_compliance == "TIDAK_LENGKAP":
+                db.session.add(Inspection(
+                    pc_id=pc_master.id, status="OK",
+                    note="Spek sudah sesuai standar saat PC nyala (pulih dari tidak lengkap)",
+                    source="boot-check",
+                ))
+                notifier.send_telegram(
+                    f"✅ <b>{pc_name}</b> menyala — spek SUDAH SESUAI STANDAR\n"
+                    f"Status pulih dari sebelumnya TIDAK LENGKAP.\n\n"
                     f"Spek aktual: {spec_compare.summarize_actual(_shim2)}\n"
                     f"Spek standar: {pc_master.spec_text}\n\n"
                     f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
