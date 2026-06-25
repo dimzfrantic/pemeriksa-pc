@@ -165,25 +165,35 @@ def agent_report():
 
     offline_secs = int(current_app.config.get("AGENT_OFFLINE_SECONDS", 180))
     now = _dt.datetime.now()
+    new_boot_time = (data.get("boot_time") or "").strip()
 
     live = PCLive.query.filter_by(pc_name=pc_name).first()
 
     # Snapshot LAMA (sebelum ditimpa) untuk deteksi perubahan saat nyala ulang
     old_snapshot = None
-    was_offline_before = True
     prev_fp = ""
+    prev_boot = ""
+    offline_transition = True
     if live:
         old_snapshot = {
             "ram_json": live.ram_json,
             "disk_json": live.disk_json,
             "gpu_json": live.gpu_json,
         }
-        # Dianggap "baru nyala" bila status tercatat offline ATAU laporan terakhir sudah basi
-        was_offline_before = (not live.was_online) or (not live.is_online(offline_secs))
         prev_fp = live.prev_fingerprint or ""
+        prev_boot = (live.last_boot_time or "").strip()
+        offline_transition = (not live.was_online) or (not live.is_online(offline_secs))
     else:
         live = PCLive(pc_name=pc_name)
         db.session.add(live)
+
+    # "Baru boot" = waktu boot Windows berubah (andal, tak tergantung lama mati).
+    # Bila agen belum mengirim boot_time (versi lama), fallback ke transisi offline.
+    if new_boot_time:
+        is_boot = (new_boot_time != prev_boot)
+    else:
+        is_boot = offline_transition
+    was_offline_before = is_boot  # nama lama dipakai di blok-blok berikut
 
     new_fp = spec_compare.fingerprint(
         data.get("ram") and _json.dumps(data.get("ram")) or "",
@@ -192,7 +202,7 @@ def agent_report():
     )
 
     # === BOOT-CHECK: deteksi perubahan spek saat PC baru menyala ===
-    # Hanya saat transisi OFFLINE -> ONLINE, dan hanya bila ada acuan sesi sebelumnya.
+    # Dipicu saat boot (waktu boot Windows berubah), bila ada acuan sesi sebelumnya.
     if was_offline_before and prev_fp and prev_fp != new_fp and old_snapshot is not None:
         new_snapshot = {
             "ram_json": _json.dumps(data.get("ram") or {}, ensure_ascii=False),
@@ -268,6 +278,8 @@ def agent_report():
     live.gpu_json = _json.dumps(data.get("gpus") or [], ensure_ascii=False)
     live.prev_fingerprint = new_fp
     live.was_online = True
+    if new_boot_time:
+        live.last_boot_time = new_boot_time
     if new_compliance:
         live.last_compliance = new_compliance
     db.session.commit()

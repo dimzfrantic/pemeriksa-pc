@@ -51,6 +51,8 @@ Dobel-klik `uninstall_agent.bat` (menghentikan proses + hapus auto-start).
 ## Catatan
 - Agen hanya koneksi KELUAR ke server (tidak buka port di PC, aman dari firewall).
 - Identitas pakai `AGENT_NAME` (manual), bukan IP -> aman walau IP DHCP berubah.
+- Agen v1.1+ mengirim waktu boot Windows (`boot_time`) agar server bisa mendeteksi
+  setiap restart secara andal (untuk notifikasi perubahan/ketidaksesuaian spek saat PC nyala).
 - Server menganggap PC OFFLINE bila tidak ada laporan > 3 menit.
 - Auto-start pakai registry Run user (aktif setelah login Windows).
 - Bila antivirus memblokir .exe PyInstaller: whitelist folder agen, atau pakai

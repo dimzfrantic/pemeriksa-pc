@@ -38,17 +38,20 @@ agent/               agen Windows (baca spek + lapor)
   ram/disk/gpu (JSON), prev_fingerprint, was_online. Online bila last_seen <= ambang offline.
 
 ## Boot-check (deteksi perubahan saat PC nyala ulang)
-- Pada transisi OFFLINE → ONLINE (heartbeat masuk setelah PC sempat offline),
-  server menjalankan dua pemeriksaan:
+- Pemicu boot: agen (v1.1+) mengirim `boot_time` (LastBootUpTime Windows). Server
+  menjalankan boot-check saat `boot_time` berubah dari yang tersimpan (`last_boot_time`).
+  Ini andal untuk restart cepat dan tahan terhadap jaringan yang telat siap saat startup.
+  Fallback ke transisi OFFLINE→ONLINE bila agen lama belum kirim `boot_time`.
+- Saat boot, server menjalankan dua pemeriksaan:
   1. **Boot-check fisik** — bandingkan "sidik jari" spek aktual sesi sebelumnya
      (`prev_fingerprint`) dengan yang baru. Deteksi komponen benar-benar berubah
      (RAM/SSD/HDD/GPU dicabut/ditambah), dengan label BERKURANG/BERTAMBAH.
   2. **Boot compliance check** — bandingkan spek aktual vs spek STANDAR (tabel pcs).
      Notif SEKALI saat status kepatuhan berubah jadi `TIDAK_LENGKAP`
      (disimpan di `last_compliance`), lalu diam sampai kondisinya berubah.
-     Ini menangkap kasus standar diubah tanpa perubahan fisik.
+     Ini menangkap kasus standar diubah lalu PC di-restart.
 - Keduanya catat riwayat (sumber `boot-check`) + kirim notifikasi Telegram.
-- Tidak membandingkan tiap heartbeat (anti-spam) dan tidak saat PC offline.
+- Pemeriksaan hanya saat boot (bukan tiap heartbeat), jadi tidak spam.
 - Lihat `spec_compare.fingerprint()` / `diff_change()` / `compare()` dan `notifier.send_telegram()`.
 
 ## API internal (dipakai poller & agen)

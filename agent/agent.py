@@ -24,7 +24,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-AGENT_VERSION = "1.0"
+AGENT_VERSION = "1.1"
 
 # Frozen-aware base dir (mendukung PyInstaller --onefile)
 if getattr(sys, "frozen", False):
@@ -185,6 +185,15 @@ def read_gpus():
     return gpus
 
 
+def read_boot_time():
+    """Waktu boot Windows terakhir (ISO string). Dipakai server untuk deteksi restart."""
+    raw = _ps(
+        "(Get-CimInstance Win32_OperatingSystem).LastBootUpTime."
+        "ToString('yyyy-MM-ddTHH:mm:ss')"
+    )
+    return (raw or "").strip()
+
+
 def collect():
     return {"ram": read_ram(), "disks": read_disks(), "gpus": read_gpus()}
 
@@ -195,6 +204,7 @@ def report():
         "hostname": socket.gethostname(),
         "ip": get_local_ip(),
         "agent_version": AGENT_VERSION,
+        "boot_time": read_boot_time(),
     }
     payload.update(collect())
     url = SERVER_URL + "/api/agent/report"

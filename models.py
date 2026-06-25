@@ -80,6 +80,7 @@ class PCLive(db.Model):
     prev_fingerprint = db.Column(db.Text, default="")  # sidik jari spek sesi nyala sebelumnya
     was_online = db.Column(db.Boolean, default=False)  # status online terakhir yang diketahui
     last_compliance = db.Column(db.String(20), default="")  # kepatuhan vs standar terakhir: OK / TIDAK_LENGKAP
+    last_boot_time = db.Column(db.String(40), default="")    # waktu boot Windows terakhir yang dilaporkan agen
 
     def __repr__(self):
         return f"<PCLive {self.pc_name} {self.last_seen}>"
