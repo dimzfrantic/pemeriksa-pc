@@ -63,6 +63,10 @@
       <td>{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
       <td>
         <a class="btn btn-sm" href="{{ url_for('insp.add', pc_id=pc.id) }}">Periksa</a>
+        <form method="post" action="{{ url_for('pc.delete', pc_id=pc.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus PC {{ pc.name }} beserta seluruh riwayatnya?')">Hapus</button>
+        </form>
       </td>
     </tr>
   {% else %}

@@ -14,6 +14,10 @@
     <a class="btn btn-primary" href="{{ url_for('insp.add', pc_id=pc.id) }}">+ Pemeriksaan</a>
     <a class="btn" href="{{ url_for('pc.edit', pc_id=pc.id) }}">Edit Spek</a>
     <a class="btn" href="{{ url_for('insp.history', pc_id=pc.id) }}">Riwayat</a>
+    <form method="post" action="{{ url_for('pc.delete', pc_id=pc.id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-danger" onclick="return confirm('Hapus PC {{ pc.name }} beserta seluruh riwayat pemeriksaannya? Tindakan ini tidak bisa dibatalkan.')">Hapus PC</button>
+    </form>
   </div>
 </div>
 
