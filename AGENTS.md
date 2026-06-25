@@ -42,15 +42,15 @@ agent/               agen Windows (baca spek + lapor)
   menjalankan boot-check saat `boot_time` berubah dari yang tersimpan (`last_boot_time`).
   Ini andal untuk restart cepat dan tahan terhadap jaringan yang telat siap saat startup.
   Fallback ke transisi OFFLINE→ONLINE bila agen lama belum kirim `boot_time`.
-- Saat boot, server menjalankan dua pemeriksaan:
-  1. **Boot-check fisik** — bandingkan "sidik jari" spek aktual sesi sebelumnya
-     (`prev_fingerprint`) dengan yang baru. Deteksi komponen benar-benar berubah
-     (RAM/SSD/HDD/GPU dicabut/ditambah), dengan label BERKURANG/BERTAMBAH.
-  2. **Boot compliance check** — bandingkan spek aktual vs spek STANDAR (tabel pcs).
-     Notif SEKALI saat status kepatuhan berubah: OK→TIDAK_LENGKAP ("⚠️ tidak sesuai standar")
-     maupun TIDAK_LENGKAP→OK ("✅ pulih/sudah sesuai"). Status disimpan di `last_compliance`
-     (anti-spam: diam selama status tidak berubah). Menangkap kasus standar diubah lalu PC di-restart.
-- Keduanya catat riwayat (sumber `boot-check`) + kirim notifikasi Telegram.
+- Saat boot, server menjalankan satu pemeriksaan gabungan:
+  1. **Perubahan fisik** — bandingkan "sidik jari" spek aktual sesi sebelumnya
+     (`prev_fingerprint`) dengan yang baru (RAM/SSD/HDD/GPU dicabut/ditambah, label BERKURANG/BERTAMBAH).
+  2. **Kepatuhan vs standar** — bandingkan spek aktual vs spek STANDAR (tabel pcs);
+     status disimpan di `last_compliance` (anti-spam).
+  Bila ada perubahan fisik dan/atau perubahan status kepatuhan (OK↔TIDAK_LENGKAP),
+  dikirim SATU notifikasi gabungan (header ⚠️ tidak sesuai / ✅ pulih / ℹ️ ada perubahan),
+  berisi perubahan fisik + kekurangan vs standar + spek aktual & standar. Satu kejadian = satu notif.
+- Setiap kejadian boot yang relevan dicatat ke riwayat (sumber `boot-check`).
 - Pemeriksaan hanya saat boot (bukan tiap heartbeat), jadi tidak spam.
 - Lihat `spec_compare.fingerprint()` / `diff_change()` / `compare()` dan `notifier.send_telegram()`.
 

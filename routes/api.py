@@ -201,87 +201,73 @@ def agent_report():
         data.get("gpus") and _json.dumps(data.get("gpus")) or "",
     )
 
-    # === BOOT-CHECK: deteksi perubahan spek saat PC baru menyala ===
-    # Dipicu saat boot (waktu boot Windows berubah), bila ada acuan sesi sebelumnya.
-    if was_offline_before and prev_fp and prev_fp != new_fp and old_snapshot is not None:
+    # === BOOT-CHECK GABUNGAN: dijalankan sekali saat PC nyala ===
+    # Kumpulkan (1) perubahan fisik vs sesi sebelumnya, dan (2) status kepatuhan
+    # vs standar; lalu kirim SATU notif Telegram (tidak terpisah-pisah).
+    new_compliance = ""
+    if was_offline_before:
+        pc_master = _find_pc(pc_name)
         new_snapshot = {
             "ram_json": _json.dumps(data.get("ram") or {}, ensure_ascii=False),
             "disk_json": _json.dumps(data.get("disks") or [], ensure_ascii=False),
             "gpu_json": _json.dumps(data.get("gpus") or [], ensure_ascii=False),
         }
-        changes = spec_compare.diff_change(old_snapshot, new_snapshot)
-        if changes:
-            # Catat ke riwayat
-            pc_master = _find_pc(pc_name)
-            note = "Perubahan saat PC nyala ulang: " + "; ".join(changes)
-            if pc_master:
-                db.session.add(Inspection(
-                    pc_id=pc_master.id, status="TIDAK_LENGKAP" if any("BERKURANG" in c for c in changes) else "OK",
-                    note=note, source="boot-check",
-                ))
-            # Kirim notifikasi Telegram (sekali, di momen nyala)
-            org = current_app.config.get("ORG_NAME", "Instansi")
-            detail = "\n".join(f"• {c}" for c in changes)
-            cmp_extra = ""
-            if pc_master:
-                _shim = type("S", (), {
-                    "ram_json": new_snapshot["ram_json"],
-                    "disk_json": new_snapshot["disk_json"],
-                    "gpu_json": new_snapshot["gpu_json"],
-                })()
-                st, kurang = spec_compare.compare(pc_master, _shim)
-                if kurang:
-                    cmp_extra = "\n\nDibanding spek standar:\n" + "\n".join(f"• {k}" for k in kurang)
-            notifier.send_telegram(
-                f"⚠️ <b>{pc_name}</b> menyala dengan perubahan spek\n{detail}{cmp_extra}\n\n"
-                f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
-            )
 
-    # === BOOT COMPLIANCE CHECK: saat PC nyala, banding aktual vs STANDAR ===
-    # Notif sekali saat status kepatuhan berubah jadi TIDAK_LENGKAP (anti-spam:
-    # diam selama statusnya tetap sama seperti pemeriksaan nyala sebelumnya).
-    new_compliance = ""
-    if was_offline_before:
-        pc_master = _find_pc(pc_name)
+        # (1) Perubahan fisik vs sesi nyala sebelumnya
+        changes = []
+        if prev_fp and prev_fp != new_fp and old_snapshot is not None:
+            changes = spec_compare.diff_change(old_snapshot, new_snapshot)
+
+        # (2) Kepatuhan vs standar
+        comp_status, comp_kurang, prev_compliance = "", [], (live.last_compliance or "")
         if pc_master:
-            _shim2 = type("S", (), {
-                "ram_json": _json.dumps(data.get("ram") or {}, ensure_ascii=False),
-                "disk_json": _json.dumps(data.get("disks") or [], ensure_ascii=False),
-                "gpu_json": _json.dumps(data.get("gpus") or [], ensure_ascii=False),
-            })()
-            comp_status, comp_kurang = spec_compare.compare(pc_master, _shim2)
+            _shim = type("S", (), new_snapshot)()
+            comp_status, comp_kurang = spec_compare.compare(pc_master, _shim)
             new_compliance = comp_status
-            prev_compliance = (live.last_compliance or "")
+
+        compliance_changed = bool(pc_master) and comp_status and comp_status != prev_compliance
+
+        # Catat riwayat bila ada sesuatu yang berubah (fisik atau status)
+        if pc_master and (changes or compliance_changed):
+            note_parts = []
+            if changes:
+                note_parts.append("Perubahan fisik: " + "; ".join(changes))
+            if compliance_changed:
+                note_parts.append(
+                    "Status: " + (
+                        "tidak sesuai standar (" + "; ".join(comp_kurang) + ")"
+                        if comp_status == "TIDAK_LENGKAP" else "sudah sesuai standar"
+                    )
+                )
+            db.session.add(Inspection(
+                pc_id=pc_master.id, status=comp_status or "OK",
+                note="Boot: " + " | ".join(note_parts), source="boot-check",
+            ))
+
+        # Susun SATU notif gabungan (hanya bila ada yang perlu dilaporkan)
+        if changes or compliance_changed:
             org = current_app.config.get("ORG_NAME", "Instansi")
-            # Notif saat berubah menjadi TIDAK_LENGKAP (mis. OK/'' -> TIDAK_LENGKAP)
-            if comp_status == "TIDAK_LENGKAP" and prev_compliance != "TIDAK_LENGKAP":
-                rincian = "\n".join(f"• {k}" for k in comp_kurang) if comp_kurang else "• tidak sesuai standar"
-                db.session.add(Inspection(
-                    pc_id=pc_master.id, status="TIDAK_LENGKAP",
-                    note="Tidak sesuai standar saat PC nyala: " + "; ".join(comp_kurang),
-                    source="boot-check",
-                ))
-                notifier.send_telegram(
-                    f"⚠️ <b>{pc_name}</b> menyala — spek TIDAK SESUAI STANDAR\n{rincian}\n\n"
-                    f"Spek aktual: {spec_compare.summarize_actual(_shim2)}\n"
-                    f"Spek standar: {pc_master.spec_text}\n\n"
-                    f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
-                )
-            # Notif saat PULIH (TIDAK_LENGKAP -> OK). Hanya bila sebelumnya benar-benar
-            # tercatat TIDAK_LENGKAP, agar tidak berbunyi pada pendaftaran/boot pertama.
-            elif comp_status == "OK" and prev_compliance == "TIDAK_LENGKAP":
-                db.session.add(Inspection(
-                    pc_id=pc_master.id, status="OK",
-                    note="Spek sudah sesuai standar saat PC nyala (pulih dari tidak lengkap)",
-                    source="boot-check",
-                ))
-                notifier.send_telegram(
-                    f"✅ <b>{pc_name}</b> menyala — spek SUDAH SESUAI STANDAR\n"
-                    f"Status pulih dari sebelumnya TIDAK LENGKAP.\n\n"
-                    f"Spek aktual: {spec_compare.summarize_actual(_shim2)}\n"
-                    f"Spek standar: {pc_master.spec_text}\n\n"
-                    f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
-                )
+            if comp_status == "TIDAK_LENGKAP":
+                header = f"⚠️ <b>{pc_name}</b> menyala — spek TIDAK SESUAI STANDAR"
+            elif compliance_changed and comp_status == "OK":
+                header = f"✅ <b>{pc_name}</b> menyala — spek SUDAH SESUAI STANDAR (pulih)"
+            else:
+                header = f"ℹ️ <b>{pc_name}</b> menyala — ada perubahan spek"
+
+            body = []
+            if changes:
+                body.append("Perubahan terdeteksi:\n" + "\n".join(f"• {c}" for c in changes))
+            if comp_status == "TIDAK_LENGKAP" and comp_kurang:
+                body.append("Kekurangan vs standar:\n" + "\n".join(f"• {k}" for k in comp_kurang))
+
+            actual_txt = spec_compare.summarize_actual(type("S", (), new_snapshot)())
+            std_txt = pc_master.spec_text if pc_master else "-"
+            body.append(f"Spek aktual: {actual_txt}\nSpek standar: {std_txt}")
+
+            notifier.send_telegram(
+                header + "\n\n" + "\n\n".join(body) +
+                f"\n\nWaktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
+            )
 
     # Simpan/timpa snapshot terkini
     live.hostname = (data.get("hostname") or "").strip()
