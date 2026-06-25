@@ -19,7 +19,7 @@ Aplikasi pemantauan kelengkapan unit PC, mencatat dan memeriksa spek tiap PC (RA
   - `list` — daftar PC + spek + status, `help` — panduan
   - Pertanyaan bebas → mode AI yang dibatasi hanya data pemeriksaan PC (opsional)
 - Agen Windows: baca spek via WMI, lapor ke server (koneksi keluar, aman dari firewall), auto-start
-- Deteksi perubahan saat PC nyala ulang (boot-check): membandingkan spek saat PC kembali online dengan kondisi terakhir sebelum mati; bila ada komponen berubah (RAM/SSD/HDD/GPU) langsung dicatat ke riwayat dan dikirim notifikasi Telegram sekali, dengan label BERKURANG/BERTAMBAH + perbandingan ke spek standar
+- Deteksi perubahan saat PC nyala ulang (boot-check): saat PC kembali online, server (1) membandingkan spek fisik aktual dengan kondisi terakhir sebelum mati untuk mendeteksi komponen dicabut/ditambah (label BERKURANG/BERTAMBAH), dan (2) membandingkan spek aktual dengan spek standar — bila tidak sesuai, kirim notifikasi Telegram sekali (diam sampai kondisinya berubah). Keduanya dicatat ke riwayat.
 - Pemeriksaan otomatis mingguan + ringkasan terkirim ke Telegram
 - Deteksi komponen hilang: bila spek aktual < standar → status TIDAK LENGKAP + rincian
 

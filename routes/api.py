@@ -227,6 +227,37 @@ def agent_report():
                 f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
             )
 
+    # === BOOT COMPLIANCE CHECK: saat PC nyala, banding aktual vs STANDAR ===
+    # Notif sekali saat status kepatuhan berubah jadi TIDAK_LENGKAP (anti-spam:
+    # diam selama statusnya tetap sama seperti pemeriksaan nyala sebelumnya).
+    new_compliance = ""
+    if was_offline_before:
+        pc_master = _find_pc(pc_name)
+        if pc_master:
+            _shim2 = type("S", (), {
+                "ram_json": _json.dumps(data.get("ram") or {}, ensure_ascii=False),
+                "disk_json": _json.dumps(data.get("disks") or [], ensure_ascii=False),
+                "gpu_json": _json.dumps(data.get("gpus") or [], ensure_ascii=False),
+            })()
+            comp_status, comp_kurang = spec_compare.compare(pc_master, _shim2)
+            new_compliance = comp_status
+            prev_compliance = (live.last_compliance or "")
+            # Notif hanya bila berubah menjadi TIDAK_LENGKAP (mis. OK/'' -> TIDAK_LENGKAP)
+            if comp_status == "TIDAK_LENGKAP" and prev_compliance != "TIDAK_LENGKAP":
+                org = current_app.config.get("ORG_NAME", "Instansi")
+                rincian = "\n".join(f"• {k}" for k in comp_kurang) if comp_kurang else "• tidak sesuai standar"
+                db.session.add(Inspection(
+                    pc_id=pc_master.id, status="TIDAK_LENGKAP",
+                    note="Tidak sesuai standar saat PC nyala: " + "; ".join(comp_kurang),
+                    source="boot-check",
+                ))
+                notifier.send_telegram(
+                    f"⚠️ <b>{pc_name}</b> menyala — spek TIDAK SESUAI STANDAR\n{rincian}\n\n"
+                    f"Spek aktual: {spec_compare.summarize_actual(_shim2)}\n"
+                    f"Spek standar: {pc_master.spec_text}\n\n"
+                    f"Waktu: {now.strftime('%Y-%m-%d %H:%M')} · {org}"
+                )
+
     # Simpan/timpa snapshot terkini
     live.hostname = (data.get("hostname") or "").strip()
     live.ip = (data.get("ip") or "").strip()
@@ -237,6 +268,8 @@ def agent_report():
     live.gpu_json = _json.dumps(data.get("gpus") or [], ensure_ascii=False)
     live.prev_fingerprint = new_fp
     live.was_online = True
+    if new_compliance:
+        live.last_compliance = new_compliance
     db.session.commit()
     return jsonify(ok=True, pc_name=pc_name, last_seen=live.last_seen.isoformat())
 

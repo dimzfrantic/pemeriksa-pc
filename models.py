@@ -75,6 +75,7 @@ class PCLive(db.Model):
     # Deteksi perubahan saat PC nyala ulang (boot-check)
     prev_fingerprint = db.Column(db.Text, default="")  # sidik jari spek sesi nyala sebelumnya
     was_online = db.Column(db.Boolean, default=False)  # status online terakhir yang diketahui
+    last_compliance = db.Column(db.String(20), default="")  # kepatuhan vs standar terakhir: OK / TIDAK_LENGKAP
 
     def __repr__(self):
         return f"<PCLive {self.pc_name} {self.last_seen}>"

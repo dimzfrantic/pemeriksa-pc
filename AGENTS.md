@@ -39,11 +39,17 @@ agent/               agen Windows (baca spek + lapor)
 
 ## Boot-check (deteksi perubahan saat PC nyala ulang)
 - Pada transisi OFFLINE → ONLINE (heartbeat masuk setelah PC sempat offline),
-  server bandingkan "sidik jari" spek sesi sebelumnya (`prev_fingerprint`) dengan yang baru.
-- Bila beda → catat riwayat (sumber `boot-check`) + kirim notifikasi Telegram sekali,
-  dengan label BERKURANG/BERTAMBAH dan perbandingan ke spek standar.
+  server menjalankan dua pemeriksaan:
+  1. **Boot-check fisik** — bandingkan "sidik jari" spek aktual sesi sebelumnya
+     (`prev_fingerprint`) dengan yang baru. Deteksi komponen benar-benar berubah
+     (RAM/SSD/HDD/GPU dicabut/ditambah), dengan label BERKURANG/BERTAMBAH.
+  2. **Boot compliance check** — bandingkan spek aktual vs spek STANDAR (tabel pcs).
+     Notif SEKALI saat status kepatuhan berubah jadi `TIDAK_LENGKAP`
+     (disimpan di `last_compliance`), lalu diam sampai kondisinya berubah.
+     Ini menangkap kasus standar diubah tanpa perubahan fisik.
+- Keduanya catat riwayat (sumber `boot-check`) + kirim notifikasi Telegram.
 - Tidak membandingkan tiap heartbeat (anti-spam) dan tidak saat PC offline.
-- Lihat `spec_compare.fingerprint()` / `spec_compare.diff_change()` dan `notifier.send_telegram()`.
+- Lihat `spec_compare.fingerprint()` / `diff_change()` / `compare()` dan `notifier.send_telegram()`.
 
 ## API internal (dipakai poller & agen)
 - `POST /api/inspect` — catat pemeriksaan manual.
