@@ -30,13 +30,9 @@
         <label>Kapasitas SSD / keping (GB)</label>
         <input type="number" name="ssd_capacity_gb" min="0" value="{{ pc.ssd_capacity_gb if pc else 512 }}">
       </div>
-      <div>
-        <label>Jumlah HDD (0 bila tidak ada)</label>
-        <input type="number" name="hdd_count" min="0" value="{{ pc.hdd_count if pc else 0 }}">
-      </div>
-      <div>
-        <label>Kapasitas HDD / unit (GB)</label>
-        <input type="number" name="hdd_capacity_gb" min="0" value="{{ pc.hdd_capacity_gb if pc else 0 }}">
+      <div class="full">
+        <label>Kapasitas tiap HDD (GB, pisah koma — kosongkan bila tidak ada HDD)</label>
+        <input type="text" name="hdd_capacities" value="{{ pc.hdd_capacities if pc and pc.hdd_capacities else (pc.hdd_list|join(', ') if pc else '') }}" style="width:100%" placeholder="mis: 500, 1000 untuk 2 HDD beda kapasitas">
       </div>
       <div class="full">
         <label>GPU (opsional)</label>

@@ -5,6 +5,22 @@ from models import PC
 pc_bp = Blueprint("pc", __name__)
 
 
+def _parse_hdd_capacities(raw):
+    """Ubah input '500, 1000' -> ('500,1000', count, kapasitas_pertama).
+
+    Mengembalikan (csv_normalisasi, jumlah, kapasitas_seragam_atau_0).
+    """
+    caps = []
+    for x in (raw or "").replace(";", ",").split(","):
+        x = x.strip()
+        if x.isdigit() and int(x) > 0:
+            caps.append(int(x))
+    csv = ",".join(str(c) for c in caps)
+    count = len(caps)
+    uniform = caps[0] if (count and len(set(caps)) == 1) else 0
+    return csv, count, uniform
+
+
 @pc_bp.route("/")
 def list():
     pcs = PC.query.order_by(PC.name.asc()).all()
@@ -29,14 +45,16 @@ def add():
             ram_capacity_gb=int(request.form.get("ram_capacity_gb") or 8),
             ssd_count=int(request.form.get("ssd_count") or 1),
             ssd_capacity_gb=int(request.form.get("ssd_capacity_gb") or 256),
-            hdd_count=int(request.form.get("hdd_count") or 0),
-            hdd_capacity_gb=int(request.form.get("hdd_capacity_gb") or 0),
             gpu_name=(request.form.get("gpu_name") or "").strip(),
             monitor_count=int(request.form.get("monitor_count") or 1),
             monitor_size_inch=int(request.form.get("monitor_size_inch") or 24),
             monitor_brand=(request.form.get("monitor_brand") or "").strip(),
             notes=(request.form.get("notes") or "").strip(),
         )
+        hdd_csv, hdd_count, hdd_uniform = _parse_hdd_capacities(request.form.get("hdd_capacities"))
+        pc.hdd_capacities = hdd_csv
+        pc.hdd_count = hdd_count
+        pc.hdd_capacity_gb = hdd_uniform
         db.session.add(pc)
         db.session.commit()
         flash(f"PC '{name}' ditambahkan", "success")
@@ -95,8 +113,10 @@ def edit(pc_id):
         pc.ram_capacity_gb = int(request.form.get("ram_capacity_gb") or 8)
         pc.ssd_count = int(request.form.get("ssd_count") or 1)
         pc.ssd_capacity_gb = int(request.form.get("ssd_capacity_gb") or 256)
-        pc.hdd_count = int(request.form.get("hdd_count") or 0)
-        pc.hdd_capacity_gb = int(request.form.get("hdd_capacity_gb") or 0)
+        hdd_csv, hdd_count, hdd_uniform = _parse_hdd_capacities(request.form.get("hdd_capacities"))
+        pc.hdd_capacities = hdd_csv
+        pc.hdd_count = hdd_count
+        pc.hdd_capacity_gb = hdd_uniform
         pc.gpu_name = (request.form.get("gpu_name") or "").strip()
         pc.monitor_count = int(request.form.get("monitor_count") or 1)
         pc.monitor_size_inch = int(request.form.get("monitor_size_inch") or 24)

@@ -13,7 +13,8 @@ class PC(db.Model):
     ssd_count = db.Column(db.Integer, nullable=False, default=1)
     ssd_capacity_gb = db.Column(db.Integer, nullable=False, default=256)
     hdd_count = db.Column(db.Integer, nullable=False, default=0)       # 0 = tidak wajib HDD
-    hdd_capacity_gb = db.Column(db.Integer, nullable=False, default=0)  # GB per HDD
+    hdd_capacity_gb = db.Column(db.Integer, nullable=False, default=0)  # GB per HDD (mode seragam, kompat lama)
+    hdd_capacities = db.Column(db.String(200), default="")  # kapasitas tiap HDD, CSV (mis. "500,1000") - utk HDD beda kapasitas
     gpu_name = db.Column(db.String(120), default="")  # optional
     monitor_count = db.Column(db.Integer, nullable=False, default=1)
     monitor_size_inch = db.Column(db.Integer, nullable=False, default=24)  # ukuran per monitor (inch)
@@ -34,13 +35,34 @@ class PC(db.Model):
         return self.inspections[0] if self.inspections else None
 
     @property
+    def hdd_list(self):
+        """Daftar kapasitas HDD standar (GB). Pakai hdd_capacities (CSV) bila ada,
+        jika tidak fallback ke hdd_count x hdd_capacity_gb (mode seragam lama)."""
+        raw = (self.hdd_capacities or "").strip()
+        if raw:
+            out = []
+            for x in raw.split(","):
+                x = x.strip()
+                if x.isdigit():
+                    out.append(int(x))
+            if out:
+                return out
+        if self.hdd_count and self.hdd_capacity_gb:
+            return [self.hdd_capacity_gb] * self.hdd_count
+        return []
+
+    @property
     def spec_text(self):
         parts = [
             f"RAM {self.ram_sticks}x{self.ram_capacity_gb}GB",
             f"SSD {self.ssd_count}x{self.ssd_capacity_gb}GB",
         ]
-        if self.hdd_count:
-            parts.append(f"HDD {self.hdd_count}x{self.hdd_capacity_gb}GB")
+        hdds = self.hdd_list
+        if hdds:
+            if len(set(hdds)) == 1:
+                parts.append(f"HDD {len(hdds)}x{hdds[0]}GB")
+            else:
+                parts.append("HDD " + "+".join(f"{c}GB" for c in hdds))
         if self.gpu_name:
             parts.append(f"GPU {self.gpu_name}")
         mon = f"Monitor {self.monitor_count}x{self.monitor_size_inch}\""

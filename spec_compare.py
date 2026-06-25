@@ -95,19 +95,26 @@ def compare(pc, live):
 
     # --- HDD (hanya dicek bila standar mensyaratkan HDD) ---
     hdd = [d for d in disks if str(d.get("media", "")).upper() == "HDD"]
-    actual_hdd_count = len(hdd)
-    actual_hdd_total = sum(int(d.get("size_gb", 0)) for d in hdd)
-    std_hdd_count = getattr(pc, "hdd_count", 0) or 0
-    std_hdd_total = (getattr(pc, "hdd_count", 0) or 0) * (getattr(pc, "hdd_capacity_gb", 0) or 0)
+    actual_hdd_caps = sorted((int(d.get("size_gb", 0)) for d in hdd), reverse=True)
+    std_hdd_caps = sorted((getattr(pc, "hdd_list", None) or []), reverse=True)
 
-    if std_hdd_count and actual_hdd_count < std_hdd_count:
-        kekurangan.append(
-            f"HDD kurang: aktual {actual_hdd_count} unit dari standar {std_hdd_count} unit"
-        )
-    elif std_hdd_total and actual_hdd_total and actual_hdd_total < std_hdd_total:
-        kekurangan.append(
-            f"Kapasitas HDD kurang: aktual {actual_hdd_total}GB dari standar {std_hdd_total}GB"
-        )
+    if std_hdd_caps:
+        if len(actual_hdd_caps) < len(std_hdd_caps):
+            kekurangan.append(
+                f"HDD kurang: aktual {len(actual_hdd_caps)} unit dari standar {len(std_hdd_caps)} unit"
+            )
+        else:
+            # Cocokkan tiap HDD standar (terbesar->terkecil) dengan HDD aktual.
+            sisa = list(actual_hdd_caps)
+            for need in std_hdd_caps:
+                # cari HDD aktual yang kapasitasnya >= kebutuhan
+                match = next((c for c in sisa if c >= need), None)
+                if match is None:
+                    kekurangan.append(
+                        f"HDD kurang: tidak ada unit >= {need}GB (standar: {'+'.join(str(c)+'GB' for c in std_hdd_caps)})"
+                    )
+                    break
+                sisa.remove(match)
 
     # --- GPU ---
     gpus = _parse(live.gpu_json) or []
