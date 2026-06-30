@@ -72,6 +72,30 @@ def history():
     )
 
 
+@insp_bp.route("/bulk-delete", methods=["POST"])
+def bulk_delete():
+    ids = request.form.getlist("inspection_ids")
+    pc_id = request.form.get("pc_id", type=int)
+    date_from = (request.form.get("date_from") or "").strip()
+    date_to = (request.form.get("date_to") or "").strip()
+
+    int_ids = []
+    for x in ids:
+        try:
+            int_ids.append(int(x))
+        except (TypeError, ValueError):
+            pass
+
+    if not int_ids:
+        flash("Pilih minimal satu catatan untuk dihapus.", "warning")
+        return redirect(url_for("insp.history", pc_id=pc_id, date_from=date_from, date_to=date_to))
+
+    deleted = Inspection.query.filter(Inspection.id.in_(int_ids)).delete(synchronize_session=False)
+    db.session.commit()
+    flash(f"{deleted} catatan pemeriksaan dihapus.", "success")
+    return redirect(url_for("insp.history", pc_id=pc_id, date_from=date_from, date_to=date_to))
+
+
 @insp_bp.route("/<int:insp_id>/delete", methods=["POST"])
 def delete(insp_id):
     inp = Inspection.query.get_or_404(insp_id)

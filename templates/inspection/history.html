@@ -24,33 +24,59 @@
     </div>
     <div class="kpi-inline">{{ items|length }} catatan</div>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Waktu</th><th>PC</th><th>Status</th><th>Catatan</th><th>Sumber</th><th>Aksi</th></tr></thead>
-      <tbody>
-      {% for inp in items %}
-        <tr>
-          <td>{{ inp.inspected_at|fmtdt }}</td>
-          <td><a href="{{ url_for('pc.detail', pc_id=inp.pc_id) }}">{{ inp.pc.name }}</a></td>
-          <td>
-            <span class="badge badge-{{ inp.status }}">
-              {% if inp.status == 'BELUM' %}BELUM DIPERIKSA{% else %}{{ inp.status }}{% endif %}
-            </span>
-          </td>
-          <td class="wrap">{{ inp.note or '-' }}</td>
-          <td>{{ inp.source }}</td>
-          <td>
-            <form method="post" action="{{ url_for('insp.delete', insp_id=inp.id) }}" style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">Hapus</button>
-            </form>
-          </td>
-        </tr>
-      {% else %}
-        <tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Belum ada riwayat pada filter yang dipilih.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <form method="post" action="{{ url_for('insp.bulk_delete') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="pc_id" value="{{ pc_id or '' }}">
+    <input type="hidden" name="date_from" value="{{ date_from }}">
+    <input type="hidden" name="date_to" value="{{ date_to }}">
+    <div class="table-shell-header" style="padding-top:0;">
+      <div class="muted">Centang beberapa catatan lalu hapus sekaligus.</div>
+      <button class="btn btn-danger btn-sm" type="submit" onclick="return confirm('Hapus semua catatan yang dicentang?')">Hapus Terpilih</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px"><input type="checkbox" id="check-all" onclick="toggleAllHistory(this)"></th>
+            <th>Waktu</th>
+            <th>PC</th>
+            <th>Status</th>
+            <th>Catatan</th>
+            <th>Sumber</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for inp in items %}
+          <tr>
+            <td><input type="checkbox" name="inspection_ids" value="{{ inp.id }}" class="history-checkbox"></td>
+            <td>{{ inp.inspected_at|fmtdt }}</td>
+            <td><a href="{{ url_for('pc.detail', pc_id=inp.pc_id) }}">{{ inp.pc.name }}</a></td>
+            <td>
+              <span class="badge badge-{{ inp.status }}">
+                {% if inp.status == 'BELUM' %}BELUM DIPERIKSA{% else %}{{ inp.status }}{% endif %}
+              </span>
+            </td>
+            <td class="wrap">{{ inp.note or '-' }}</td>
+            <td>{{ inp.source }}</td>
+            <td>
+              <button class="btn btn-sm btn-danger" type="submit" formaction="{{ url_for('insp.delete', insp_id=inp.id) }}" formmethod="post" onclick="return confirm('Hapus?')">Hapus</button>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted" style="text-align:center;padding:18px">Belum ada riwayat pada filter yang dipilih.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
 </section>
+
+<script>
+function toggleAllHistory(source) {
+  document.querySelectorAll('.history-checkbox').forEach(function (cb) {
+    cb.checked = source.checked;
+  });
+}
+</script>
 {% endblock %}
