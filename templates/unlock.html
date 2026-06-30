@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Buka Akses — {{ APP_TITLE }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="bg-orb orb-a"></div>
+<div class="bg-orb orb-b"></div>
+<div class="bg-grid"></div>
+
+{% set ns = namespace(hint='') %}
+
+<main class="container" style="max-width:720px; padding-top:72px; position:relative; z-index:1;">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+      {% for cat, msg in messages %}
+        {% if cat == 'hint' %}
+          {% set ns.hint = msg %}
+        {% else %}
+          <div class="flash flash-{{ cat }}">{{ msg }}</div>
+        {% endif %}
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <section class="page-hero" style="grid-template-columns:1fr; margin-bottom:0;">
+    <div class="hero-panel" style="min-height:auto; text-align:center;">
+      <div class="hero-kicker">Akses terbatas</div>
+      <h1 class="hero-title" style="margin-bottom:12px;">Masukkan passcode untuk membuka dashboard</h1>
+      <p class="hero-desc" style="margin:0 auto 20px; max-width:44ch;">
+        Halaman web dikunci. Masukkan passcode untuk melanjutkan ke {{ APP_TITLE }}.
+      </p>
+      <form method="post" action="{{ url_for('unlock', next=request.args.get('next', '')) }}" style="max-width:360px; margin:0 auto; display:grid; gap:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="password" name="passcode" placeholder="Masukkan passcode" autofocus style="text-align:center; font-size:18px; letter-spacing:0.2em;">
+        <button class="btn btn-primary" style="width:100%;">Buka Akses</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+{% if ns.hint %}
+<div class="modal-backdrop show"></div>
+<div class="modal-card show" role="dialog" aria-modal="true" aria-labelledby="hintTitle">
+  <div class="modal-head">
+    <div>
+      <div class="modal-kicker">Hint</div>
+      <h2 id="hintTitle" class="modal-title">Passcode belum tepat</h2>
+    </div>
+    <button type="button" class="modal-close" onclick="closeHintModal()" aria-label="Tutup">×</button>
+  </div>
+  <div class="modal-body">
+    {{ ns.hint }}
+  </div>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-primary" onclick="closeHintModal()">Saya paham</button>
+  </div>
+</div>
+<script>
+  function closeHintModal() {
+    document.querySelector('.modal-backdrop')?.remove();
+    document.querySelector('.modal-card')?.remove();
+  }
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeHintModal();
+  });
+</script>
+{% endif %}
+</body>
+</html>

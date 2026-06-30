@@ -106,8 +106,9 @@ def handle(text, chat_id, thread_id=None):
         for it in items:
             spec = it.get("spec", "")
             status = it.get("status", "BELUM")
+            display_status = "BELUM DIPERIKSA" if status == "BELUM" else status
             icon = "✅" if status == "OK" else ("⚠️" if status == "TIDAK_LENGKAP" else "▫️")
-            lines.append(f"{icon} <b>{it['name']}</b> — {status}")
+            lines.append(f"{icon} <b>{it['name']}</b> — {display_status}")
             if spec:
                 lines.append(f"   Spek: {spec}")
             if it.get("note"):

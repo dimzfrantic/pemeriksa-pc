@@ -30,6 +30,9 @@ class Config:
     # Ambang detik untuk menganggap PC offline (laporan agen terakhir lebih tua dari ini)
     AGENT_OFFLINE_SECONDS = int(os.environ.get("AGENT_OFFLINE_SECONDS", "180"))
 
+    # Passcode sederhana untuk mengunci akses web (API tetap bebas)
+    WEB_PASSCODE = os.environ.get("WEB_PASSCODE", "1234").strip()
+
     # Branding (diisi via .env; default generik agar repo netral)
     ORG_NAME = os.environ.get("ORG_NAME", "Instansi").strip()
     APP_TITLE = os.environ.get("APP_TITLE", "Pemantauan PC").strip()

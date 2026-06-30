@@ -1,28 +1,56 @@
 {% extends "base.html" %}
 {% block title %}Riwayat Pemeriksaan{% endblock %}
 {% block content %}
-<div class="card" style="padding:0">
-<table>
-  <thead><tr><th>Waktu</th><th>PC</th><th>Status</th><th>Catatan</th><th>Sumber</th><th>Aksi</th></tr></thead>
-  <tbody>
-  {% for inp in items %}
-    <tr>
-      <td>{{ inp.inspected_at|fmtdt }}</td>
-      <td><a href="{{ url_for('pc.detail', pc_id=inp.pc_id) }}">{{ inp.pc.name }}</a></td>
-      <td><span class="badge badge-{{ inp.status }}">{{ inp.status }}</span></td>
-      <td class="wrap">{{ inp.note or '-' }}</td>
-      <td>{{ inp.source }}</td>
-      <td>
-        <form method="post" action="{{ url_for('insp.delete', insp_id=inp.id) }}" style="display:inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">Hapus</button>
-        </form>
-      </td>
-    </tr>
-  {% else %}
-    <tr><td colspan="6" class="muted" style="text-align:center;padding:14px">Belum ada riwayat.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<div class="toolbar">
+  <form method="get">
+    <select name="pc_id">
+      <option value="">Semua PC</option>
+      {% for p in pcs %}
+        <option value="{{ p.id }}" {% if pc_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" name="date_from" value="{{ date_from }}" placeholder="Dari tanggal (YYYY-MM-DD)">
+    <input type="text" name="date_to" value="{{ date_to }}" placeholder="Sampai tanggal (YYYY-MM-DD)">
+    <button class="btn btn-primary btn-sm">Filter</button>
+    <a class="btn btn-sm" href="{{ url_for('insp.history') }}{% if pc_id %}?pc_id={{ pc_id }}{% endif %}">Reset</a>
+  </form>
 </div>
+
+<section class="table-shell">
+  <div class="table-shell-header">
+    <div>
+      <h2>Riwayat Pemeriksaan</h2>
+      <p>Filter berdasarkan unit PC dan rentang waktu pemeriksaan.</p>
+    </div>
+    <div class="kpi-inline">{{ items|length }} catatan</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Waktu</th><th>PC</th><th>Status</th><th>Catatan</th><th>Sumber</th><th>Aksi</th></tr></thead>
+      <tbody>
+      {% for inp in items %}
+        <tr>
+          <td>{{ inp.inspected_at|fmtdt }}</td>
+          <td><a href="{{ url_for('pc.detail', pc_id=inp.pc_id) }}">{{ inp.pc.name }}</a></td>
+          <td>
+            <span class="badge badge-{{ inp.status }}">
+              {% if inp.status == 'BELUM' %}BELUM DIPERIKSA{% else %}{{ inp.status }}{% endif %}
+            </span>
+          </td>
+          <td class="wrap">{{ inp.note or '-' }}</td>
+          <td>{{ inp.source }}</td>
+          <td>
+            <form method="post" action="{{ url_for('insp.delete', insp_id=inp.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">Hapus</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Belum ada riwayat pada filter yang dipilih.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

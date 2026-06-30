@@ -25,6 +25,7 @@ def index():
     for pc in pcs:
         latest = pc.latest_inspection
         status = latest.status if latest else "BELUM"
+        display_status = "BELUM DIPERIKSA" if status == "BELUM" else status
         if status_filter and status != status_filter:
             continue
         live = live_map.get(pc.name)
@@ -35,6 +36,7 @@ def index():
             "pc": pc,
             "latest": latest,
             "status": status,
+            "display_status": display_status,
             "live": live,
             "online": is_online,
             "ip": (live.ip if live else ""),

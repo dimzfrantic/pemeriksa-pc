@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, render_template, request, session, url_for, flash
 from config import Config
 from extensions import db, csrf
 from models import PC, Inspection, PCLive
@@ -42,7 +42,41 @@ def create_app(config_class=Config):
         return {
             "ORG_NAME": app.config.get("ORG_NAME", "Instansi"),
             "APP_TITLE": app.config.get("APP_TITLE", "Pemantauan PC"),
+            "WEB_UNLOCKED": bool(session.get("web_unlocked")),
         }
+
+    @app.route("/unlock", methods=["GET", "POST"])
+    def unlock():
+        if request.method == "POST":
+            code = (request.form.get("passcode") or "").strip()
+            if code == app.config.get("WEB_PASSCODE", "1234"):
+                session["web_unlocked"] = True
+                session.pop("unlock_fail_count", None)
+                flash("Passcode benar. Akses dibuka.", "success")
+                next_url = request.args.get("next") or url_for("main.index")
+                return redirect(next_url)
+            fail_count = int(session.get("unlock_fail_count", 0)) + 1
+            session["unlock_fail_count"] = fail_count
+            flash("Passcode salah.", "warning")
+            if fail_count >= 3:
+                flash("apakah kamu tidak belajar berhitung waktu kecil?", "hint")
+        return render_template("unlock.html")
+
+    @app.route("/logout-web", methods=["POST"])
+    def logout_web():
+        session.pop("web_unlocked", None)
+        flash("Akses web dikunci kembali.", "success")
+        return redirect(url_for("unlock"))
+
+    @app.before_request
+    def require_passcode_for_web():
+        endpoint = request.endpoint or ""
+        # API, static, dan halaman unlock/logout tidak perlu passcode
+        if endpoint.startswith("api.") or endpoint in {"static", "unlock", "logout_web"}:
+            return None
+        if not session.get("web_unlocked"):
+            return redirect(url_for("unlock", next=request.path))
+        return None
 
     return app
 

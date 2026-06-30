@@ -7,14 +7,29 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<header class="topbar">
-  <div class="brand">🖥️ {{ APP_TITLE }}</div>
-  <nav class="nav">
-    <a href="{{ url_for('main.index') }}">Dashboard</a>
-    <a href="{{ url_for('pc.add') }}">+ Tambah PC</a>
-    <a href="{{ url_for('insp.add') }}">+ Pemeriksaan</a>
-    <a href="{{ url_for('insp.history') }}">Riwayat</a>
-  </nav>
+<div class="bg-orb orb-a"></div>
+<div class="bg-orb orb-b"></div>
+<div class="bg-grid"></div>
+
+<header class="topbar-shell">
+  <div class="topbar">
+    <div class="brand-wrap">
+      <div class="brand">🖥️ {{ APP_TITLE }}</div>
+      <div class="brand-sub">Pemantauan spesifikasi, pemeriksaan, dan status agen unit PC</div>
+    </div>
+    <nav class="nav">
+      <a href="{{ url_for('main.index') }}">Dashboard</a>
+      <a href="{{ url_for('pc.add') }}">+ Tambah PC</a>
+      <a href="{{ url_for('insp.add') }}">+ Pemeriksaan</a>
+      <a href="{{ url_for('insp.history') }}">Riwayat</a>
+      {% if WEB_UNLOCKED %}
+      <form method="post" action="{{ url_for('logout_web') }}" class="nav-lock-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="nav-lock-btn" type="submit">Kunci</button>
+      </form>
+      {% endif %}
+    </nav>
+  </div>
 </header>
 
 <main class="container">

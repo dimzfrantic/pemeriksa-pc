@@ -1,78 +1,116 @@
 {% extends "base.html" %}
 {% block title %}Dashboard Pemantauan PC{% endblock %}
 {% block content %}
+<section class="page-hero">
+  <div class="hero-panel">
+    <div class="hero-kicker">Live monitoring • web + telegram + agent</div>
+    <h1 class="hero-title">Kontrol kelengkapan unit PC dalam satu dashboard yang lebih hidup.</h1>
+    <p class="hero-desc">
+      Pantau spek standar, status pemeriksaan, agen online, IP aktif, dan jejak inspeksi terakhir
+      tanpa perlu berpindah alat. Desain ini difokuskan untuk pemakaian operasional: cepat dibaca,
+      tetap rapi di layar HP, dan nyaman dipakai terus-menerus.
+    </p>
+  </div>
+  <aside class="hero-side">
+    <div>
+      <div class="side-label">Ringkasan cepat</div>
+    </div>
+    <div class="side-row">
+      <span>Status agen aktif</span>
+      <strong>{{ online_count }}/{{ total }}</strong>
+    </div>
+    <div class="side-row">
+      <span>Pemeriksaan bermasalah</span>
+      <strong>{{ tidak }}</strong>
+    </div>
+    <div class="side-row">
+      <span>Belum diperiksa</span>
+      <strong>{{ belum }}</strong>
+    </div>
+  </aside>
+</section>
+
 <div class="stats">
   <div class="stat"><div class="n">{{ total }}</div><div class="l">Total PC</div></div>
-  <div class="stat"><div class="n" style="color:var(--ok)">{{ ok }}</div><div class="l">OK</div></div>
-  <div class="stat"><div class="n" style="color:var(--bad)">{{ tidak }}</div><div class="l">Tidak Lengkap</div></div>
-  <div class="stat"><div class="n" style="color:var(--neutral)">{{ belum }}</div><div class="l">Belum Diperiksa</div></div>
-  <div class="stat"><div class="n" style="color:var(--ok)">{{ online_count }}</div><div class="l">Agen Online</div></div>
+  <div class="stat"><div class="n" style="color:var(--accent)">{{ ok }}</div><div class="l">OK</div></div>
+  <div class="stat"><div class="n" style="color:var(--danger)">{{ tidak }}</div><div class="l">Tidak Lengkap</div></div>
+  <div class="stat"><div class="n" style="color:#dbe4f1">{{ belum }}</div><div class="l">Belum Diperiksa</div></div>
+  <div class="stat"><div class="n" style="color:var(--primary)">{{ online_count }}</div><div class="l">Agen Online</div></div>
 </div>
 
 <div class="toolbar">
   <form method="get">
-    <input type="text" name="q" value="{{ q }}" placeholder="cari nama/lokasi PC">
+    <input type="text" name="q" value="{{ q }}" placeholder="Cari nama PC atau lokasi...">
     <select name="status">
       <option value="">Semua status</option>
       <option value="OK" {% if status_filter=='OK' %}selected{% endif %}>OK</option>
       <option value="TIDAK_LENGKAP" {% if status_filter=='TIDAK_LENGKAP' %}selected{% endif %}>Tidak Lengkap</option>
       <option value="BELUM" {% if status_filter=='BELUM' %}selected{% endif %}>Belum Diperiksa</option>
     </select>
-    <button class="btn btn-primary btn-sm">Filter</button>
+    <button class="btn btn-primary btn-sm">Terapkan Filter</button>
     <a class="btn btn-sm" href="{{ url_for('main.index') }}">Reset</a>
   </form>
 </div>
 
-<div class="card" style="padding:0">
-<table>
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Nama PC</th>
-      <th class="wrap">Lokasi</th>
-      <th class="wrap">Spek Standar</th>
-      <th>Status</th>
-      <th>Agen</th>
-      <th>IP</th>
-      <th>Last Seen</th>
-      <th class="wrap">Catatan Terakhir</th>
-      <th>Pemeriksaan Terakhir</th>
-      <th>Aksi</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for r in rows %}
-    {% set pc = r.pc %}
-    {% set latest = r.latest %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td><a href="{{ url_for('pc.detail', pc_id=pc.id) }}"><strong>{{ pc.name }}</strong></a></td>
-      <td class="wrap">{{ pc.location or '-' }}</td>
-      <td class="wrap spec">{{ pc.spec_text }}</td>
-      <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
-      <td>
-        {% if r.online %}
-          <span class="badge badge-OK">● ONLINE</span>
-        {% else %}
-          <span class="badge badge-BELUM">○ OFFLINE</span>
-        {% endif %}
-      </td>
-      <td class="spec">{{ r.ip or '-' }}</td>
-      <td>{{ r.last_seen|fmtdt if r.last_seen else '-' }}</td>
-      <td class="wrap">{{ latest.note if latest else '-' }}</td>
-      <td>{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
-      <td>
-        <a class="btn btn-sm" href="{{ url_for('insp.add', pc_id=pc.id) }}">Periksa</a>
-        <form method="post" action="{{ url_for('pc.delete', pc_id=pc.id) }}" style="display:inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus PC {{ pc.name }} beserta seluruh riwayatnya?')">Hapus</button>
-        </form>
-      </td>
-    </tr>
-  {% else %}
-    <tr><td colspan="11" class="muted" style="text-align:center;padding:18px">Belum ada PC terdaftar. Tambahkan dahulu.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-</div>
+<section class="table-shell">
+  <div class="table-shell-header">
+    <div>
+      <h2>Daftar Unit PC</h2>
+      <p>Menampilkan spek standar, status pemeriksaan, dan status agen terbaru.</p>
+    </div>
+    <div class="kpi-inline">{{ total }} unit terpantau</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nama PC</th>
+          <th class="wrap">Lokasi</th>
+          <th class="wrap">Spek Standar</th>
+          <th>Status</th>
+          <th>Agen</th>
+          <th>IP</th>
+          <th>Last Seen</th>
+          <th class="wrap">Catatan Terakhir</th>
+          <th>Pemeriksaan Terakhir</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        {% set pc = r.pc %}
+        {% set latest = r.latest %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><a href="{{ url_for('pc.detail', pc_id=pc.id) }}"><strong>{{ pc.name }}</strong></a></td>
+          <td class="wrap">{{ pc.location or '-' }}</td>
+          <td class="wrap spec">{{ pc.spec_text }}</td>
+          <td><span class="badge badge-{{ r.status }}">{{ r.display_status }}</span></td>
+          <td>
+            {% if r.online %}
+              <span class="badge badge-OK">● ONLINE</span>
+            {% else %}
+              <span class="badge badge-BELUM">○ OFFLINE</span>
+            {% endif %}
+          </td>
+          <td class="spec">{{ r.ip or '-' }}</td>
+          <td>{{ r.last_seen|fmtdt if r.last_seen else '-' }}</td>
+          <td class="wrap">{{ latest.note if latest else '-' }}</td>
+          <td>{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
+          <td>
+            <a class="btn btn-sm" href="{{ url_for('insp.add', pc_id=pc.id) }}">Periksa</a>
+            <form method="post" action="{{ url_for('pc.delete', pc_id=pc.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus PC {{ pc.name }} beserta seluruh riwayatnya?')">Hapus</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="11" class="muted" style="text-align:center;padding:24px">Belum ada PC terdaftar. Tambahkan unit pertama untuk memulai pemantauan.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

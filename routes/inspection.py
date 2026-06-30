@@ -40,11 +40,36 @@ def add():
 @insp_bp.route("/history")
 def history():
     pc_id = request.args.get("pc_id", type=int)
+    date_from = (request.args.get("date_from") or "").strip()
+    date_to = (request.args.get("date_to") or "").strip()
+
     q = Inspection.query
     if pc_id:
         q = q.filter_by(pc_id=pc_id)
-    items = q.order_by(Inspection.inspected_at.desc()).limit(200).all()
-    return render_template("inspection/history.html", items=items, pc_id=pc_id)
+
+    if date_from:
+        try:
+            dt_from = _dt.datetime.strptime(date_from, "%Y-%m-%d")
+            q = q.filter(Inspection.inspected_at >= dt_from)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = _dt.datetime.strptime(date_to, "%Y-%m-%d") + _dt.timedelta(days=1)
+            q = q.filter(Inspection.inspected_at < dt_to)
+        except ValueError:
+            pass
+
+    items = q.order_by(Inspection.inspected_at.desc()).limit(500).all()
+    pcs = PC.query.order_by(PC.name.asc()).all()
+    return render_template(
+        "inspection/history.html",
+        items=items,
+        pc_id=pc_id,
+        pcs=pcs,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
 
 @insp_bp.route("/<int:insp_id>/delete", methods=["POST"])
