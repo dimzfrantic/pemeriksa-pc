@@ -73,7 +73,7 @@
           <th>IP</th>
           <th>Last Seen</th>
           <th class="wrap">Catatan Terakhir</th>
-          <th>Pemeriksaan Terakhir</th>
+          <th class="wrap">Pemeriksaan Terakhir</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -95,9 +95,9 @@
             {% endif %}
           </td>
           <td class="spec">{{ r.ip or '-' }}</td>
-          <td>{{ r.last_seen|fmtdt if r.last_seen else '-' }}</td>
+          <td class="wrap spec">{{ (r.last_seen|fmtdt).replace(' ', '<br>')|safe if r.last_seen else '-' }}</td>
           <td class="wrap">{{ latest.note if latest else '-' }}</td>
-          <td>{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
+          <td class="wrap">{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
           <td>
             <a class="btn btn-sm" href="{{ url_for('insp.add', pc_id=pc.id) }}">Periksa</a>
             <form method="post" action="{{ url_for('pc.delete', pc_id=pc.id) }}" style="display:inline">
