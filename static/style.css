@@ -484,6 +484,17 @@ label {
   font-variant-numeric: tabular-nums;
   color: #dce7f7;
 }
+.last-seen-cell {
+  min-width: 112px;
+}
+.last-seen-date,
+.last-seen-time {
+  display: block;
+  line-height: 1.35;
+}
+.last-seen-time {
+  margin-top: 3px;
+}
 
 .kpi-inline {
   display: inline-flex;

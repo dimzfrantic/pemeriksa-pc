@@ -90,7 +90,15 @@
             {% endif %}
           </td>
           <td class="spec">{{ r.ip or '-' }}</td>
-          <td class="wrap spec">{{ (r.last_seen|fmtdt).replace(' ', '<br>')|safe if r.last_seen else '-' }}</td>
+          <td class="wrap spec last-seen-cell">
+            {% if r.last_seen %}
+              {% set ds = r.last_seen|fmtdt %}
+              <span class="last-seen-date">{{ ds.split(' ')[0] }}</span>
+              <span class="last-seen-time">{{ ds.split(' ')[1] if ' ' in ds else '' }}</span>
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td class="wrap">{{ latest.note if latest else '-' }}</td>
           <td class="wrap">{{ latest.inspected_at|fmtdt if latest else '-' }}</td>
           <td>
